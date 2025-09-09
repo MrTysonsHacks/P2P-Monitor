@@ -4,6 +4,10 @@ This is a little Windows Forms tool I put together to keep an eye on DreamBot lo
 The app has a Material Design style interface, saves your settings, and can even grab screenshots of the bot client if you want.
 
 ---
+## Download
+
+[Click Here to download the latest release!](https://github.com/MrTysonsHacks/P2P-Monitor/releases)
+
 
 ## Features
 
