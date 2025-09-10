@@ -497,6 +497,7 @@ Public Class Form1
                 Dim questSegments = SliceQuests(onlyNew)
                 If questSegments.Count > 0 Then
                     AppendLog($"🏆 Found {questSegments.Count} quest(s)")
+                    Await SendSegments(questSegments, path, "Quest Event", COLOR_QUEST)
                 End If
             End If
 

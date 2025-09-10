@@ -1012,7 +1012,7 @@ Partial Class Form1
         MaximizeBox = False
         Name = "Form1"
         Sizable = False
-        Text = "P2P Monitor v1.1 by CaS5"
+        Text = "P2P Monitor v1.1.1 by CaS5"
         Hamburger.ResumeLayout(False)
         discordManagement.ResumeLayout(False)
         discordManagement.PerformLayout()
