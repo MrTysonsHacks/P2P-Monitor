@@ -92,7 +92,7 @@ Public Class DiscordHelpers
         ""text"": ""P2P Monitor Detection system - {time}""
       },
       ""image"": {
-        ""url"": ""{screenshot}""
+        ""url"": ""attachment://{screenshot}""
       },
       ""color"": 6029136
     }
