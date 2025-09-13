@@ -1,0 +1,269 @@
+Imports System.IO
+Imports System.Text.RegularExpressions
+
+Public Class LogHelper
+    Public Shared Async Function OnLogChanged(sender As Object, e As FileSystemEventArgs,
+                                monitoring As Boolean,
+                                lastOffsets As Dictionary(Of String, Long),
+                                lastProcessedTimes As Dictionary(Of String, DateTime?),
+                                monitorChat As Boolean,
+                                monitorQuests As Boolean,
+                                takeScreenshots As Boolean,
+                                questError As Boolean,
+                                skillIssue As Boolean,
+                                combatError As Boolean,
+                                questFailureTriggers As List(Of Regex),
+                                questFailureReasons As List(Of KeyValuePair(Of Regex, String)),
+                                skillFailureTriggers As List(Of Regex),
+                                skillFailureReasons As List(Of KeyValuePair(Of Regex, String)),
+                                combatFailureTriggers As List(Of Regex),
+                                combatFailureReasons As List(Of KeyValuePair(Of Regex, String)),
+                                AppendLog As Action(Of String),
+                                SendSegments As Func(Of List(Of List(Of String)), String, String, Integer, Task),
+                                PostFailAlert As Func(Of String, String, String, String, Task),
+                                GetFolderName As Func(Of String, String)) As Task(Of Boolean)
+
+        If Not monitoring Then Return False
+        Try
+            Dim path As String = e.FullPath
+            If Not File.Exists(path) Then Return False
+
+            If Not lastOffsets.ContainsKey(path) Then
+                JumpToEnd(path, lastOffsets, lastProcessedTimes)
+                Return False
+            End If
+
+            If e.ChangeType = WatcherChangeTypes.Created Then
+                JumpToEnd(path, lastOffsets, lastProcessedTimes)
+                Return False
+            End If
+
+            Dim offset As Long = If(lastOffsets.ContainsKey(path), lastOffsets(path), 0L)
+            Dim newLines As List(Of String) = TailReadNewLines(path, offset)
+            lastOffsets(path) = offset
+            If newLines.Count = 0 Then Return False
+
+            Dim cutoff As DateTime? = If(lastProcessedTimes.ContainsKey(path), lastProcessedTimes(path), Nothing)
+            Dim onlyNew = New List(Of String)
+            For Each line In newLines
+                Dim ts = ParseLogDate(line)
+                If ts.HasValue AndAlso (cutoff Is Nothing OrElse ts > cutoff) Then
+                    onlyNew.Add(line)
+                End If
+            Next
+            If onlyNew.Count = 0 Then Return False
+
+            If monitorChat Then
+                Dim chatSegments = SliceChatSegments(onlyNew)
+                If chatSegments.Count > 0 Then
+                    AppendLog($"📨 Found {chatSegments.Count} chat event(s)")
+                    If takeScreenshots Then
+                        Dim folderName As String = GetFolderName(path)
+                        Dim logRoot As String = System.IO.Path.GetDirectoryName(path)
+
+                        Dim screenshotPath As String = ScreenshotHelpers.SnapAndSend(path, folderName, logRoot)
+
+                        If Not String.IsNullOrWhiteSpace(screenshotPath) Then
+                            AppendLog("📸 Screenshot captured.")
+                        Else
+                            AppendLog("⚠ DreamBot window not found or failed to capture screenshot.")
+                        End If
+                    End If
+                    Await SendSegments(chatSegments, path, "P2P Chat Event", &H7289DA)
+                End If
+            End If
+
+            If monitorQuests Then
+                Dim questSegments = SliceQuests(onlyNew)
+                If questSegments.Count > 0 Then
+                    AppendLog($"🏆 Found {questSegments.Count} quest(s)")
+                    Await SendSegments(questSegments, path, "Quest Event", &HFFD700)
+                End If
+            End If
+
+            If questError Then
+                Dim questFailures = ScanFailures(onlyNew, questFailureTriggers, questFailureReasons, "Quest")
+                For Each failure In questFailures
+                    AppendLog($"❌ Quest Failure detected: {failure.Trigger} / {failure.Reason}")
+                    Await PostFailAlert(failure.Trigger, failure.Reason, path, "Quest")
+                Next
+            End If
+
+            If skillIssue Then
+                Dim skillFailures = ScanFailures(onlyNew, skillFailureTriggers, skillFailureReasons, "Skill")
+                For Each failure In skillFailures
+                    AppendLog($"❌ Skill Failure detected: {failure.Trigger} / {failure.Reason}")
+                    Await PostFailAlert(failure.Trigger, failure.Reason, path, "Skill")
+                Next
+            End If
+
+            If combatError Then
+                Dim combatFailures = ScanFailures(onlyNew, combatFailureTriggers, combatFailureReasons, "Combat")
+                For Each failure In combatFailures
+                    AppendLog($"❌ Combat Failure detected: {failure.Trigger} / {failure.Reason}")
+                    Await PostFailAlert(failure.Trigger, failure.Reason, path, "Combat")
+                Next
+            End If
+
+            Dim maxTs = onlyNew.Select(Function(line) ParseLogDate(line)).
+                                Where(Function(ts) ts.HasValue).
+                                Select(Function(ts) ts.Value).
+                                DefaultIfEmpty(DateTime.MinValue).
+                                Max()
+            If maxTs <> DateTime.MinValue Then lastProcessedTimes(path) = maxTs
+
+        Catch ex As Exception
+            AppendLog("Watcher error: " & ex.Message)
+        End Try
+        Return True
+    End Function
+
+    Public Shared Sub HeartbeatTick(state As Object, logAction As Action(Of String), ByRef lastFile As String,
+                                checkInterval As Integer, LOG_DIR As String,
+                                lastOffsets As Dictionary(Of String, Long),
+                                lastProcessedTimes As Dictionary(Of String, DateTime?))
+
+        Dim latest = GetLatestLogFile(LOG_DIR)
+        If String.IsNullOrWhiteSpace(latest) Then
+            logAction("No log files found.")
+            Return
+        End If
+
+        If lastFile Is Nothing OrElse latest <> lastFile Then
+            logAction("📄 New log file detected: " & Path.GetFileName(latest))
+            lastFile = latest
+            JumpToEnd(latest, lastOffsets, lastProcessedTimes)
+        Else
+            logAction($"No new entries. (Interval {checkInterval} seconds)")
+        End If
+    End Sub
+
+
+    Public Shared Sub JumpToEnd(path As String, lastOffsets As Dictionary(Of String, Long), lastProcessedTimes As Dictionary(Of String, DateTime?))
+        Try
+            lastOffsets(path) = New FileInfo(path).Length
+            lastProcessedTimes(path) = DateTime.Now
+        Catch
+        End Try
+    End Sub
+
+    Public Shared Function GetLatestLogFile(LOG_DIR As String) As String
+        If String.IsNullOrWhiteSpace(LOG_DIR) Then Return Nothing
+
+        Dim allLogs As New List(Of String)()
+        For Each dir As String In LOG_DIR.Split(";"c)
+            Dim trimmed = dir.Trim()
+            If trimmed <> "" AndAlso Directory.Exists(trimmed) Then
+                Try
+                    allLogs.AddRange(Directory.GetFiles(trimmed, "logfile-*.log", SearchOption.TopDirectoryOnly))
+                Catch
+                End Try
+            End If
+        Next
+
+        If allLogs.Count = 0 Then Return Nothing
+
+        Dim latestPath As String = Nothing
+        Dim latestStamp As DateTime = DateTime.MinValue
+
+        For Each filePath As String In allLogs
+            Try
+                Dim stamp As DateTime = File.GetLastWriteTimeUtc(filePath)
+                If (stamp > latestStamp) OrElse (stamp = latestStamp AndAlso (latestPath Is Nothing OrElse String.CompareOrdinal(filePath, latestPath) > 0)) Then
+                    latestStamp = stamp
+                    latestPath = filePath
+                End If
+            Catch
+            End Try
+        Next
+
+        Return latestPath
+    End Function
+
+    Public Shared Function TailReadNewLines(path As String, ByRef offset As Long) As List(Of String)
+        Dim result As New List(Of String)
+        Using fs As New FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+            fs.Seek(offset, SeekOrigin.Begin)
+            Using sr As New StreamReader(fs)
+                While Not sr.EndOfStream
+                    result.Add(sr.ReadLine())
+                End While
+                offset = fs.Position
+            End Using
+        End Using
+        Return result
+    End Function
+
+    Public Shared Function ParseLogDate(line As String) As DateTime?
+        Try
+            Return DateTime.ParseExact(line.Substring(0, 19), "yyyy-MM-dd HH:mm:ss", Nothing)
+        Catch
+            Return Nothing
+        End Try
+    End Function
+
+    Public Shared Function SliceChatSegments(lines As IEnumerable(Of String)) As List(Of List(Of String))
+        Dim segments As New List(Of List(Of String))()
+        Dim current As New List(Of String)()
+        For Each line In lines
+            Dim upper = line.ToUpper()
+            If upper.Contains("CHAT") AndAlso current.Count = 0 Then
+                current.Add(line)
+            ElseIf (upper.Contains("SLOWLY TYPING RESPONSE") OrElse upper.Contains("BAD RESPONSE")) AndAlso current.Count > 0 Then
+                current.Add(line)
+                segments.Add(New List(Of String)(current))
+                current.Clear()
+            ElseIf current.Count > 0 Then
+                current.Add(line)
+            End If
+        Next
+        Return segments
+    End Function
+
+    Public Shared Function SliceQuests(lines As IEnumerable(Of String)) As List(Of List(Of String))
+        Dim quests As New List(Of List(Of String))()
+        For Each line In lines
+            If line.Contains("Congratulations, you've completed a quest") Then
+                Dim cleaned = Regex.Replace(line, "<col=.*?>(.*?)</col>", "$1")
+                quests.Add(New List(Of String) From {cleaned})
+            End If
+        Next
+        Return quests
+    End Function
+
+    Public Shared Function ScanFailures(lines As List(Of String),
+                                        triggers As List(Of Regex),
+                                        reasons As List(Of KeyValuePair(Of Regex, String)),
+                                        failureType As String) As List(Of (Trigger As String, Reason As String))
+
+        Dim results As New List(Of (Trigger As String, Reason As String))
+
+        For i = 0 To lines.Count - 1
+            Dim currentLine = lines(i)
+            If triggers.Any(Function(rx) rx.IsMatch(currentLine)) Then
+                Dim matchedReason As String = Nothing
+
+                Dim startIdx = Math.Max(0, i - 10)
+                Dim endIdx = Math.Min(lines.Count - 1, i + 10)
+
+                For j = startIdx To endIdx
+                    For Each r In reasons
+                        If r.Key.IsMatch(lines(j)) Then
+                            matchedReason = r.Value
+                            Exit For
+                        End If
+                    Next
+                    If matchedReason IsNot Nothing Then Exit For
+                Next
+
+                If String.IsNullOrWhiteSpace(matchedReason) Then
+                    matchedReason = "Unknown reason, please send logs to CaS5"
+                End If
+
+                results.Add((currentLine, matchedReason))
+            End If
+        Next
+
+        Return results
+    End Function
+End Class

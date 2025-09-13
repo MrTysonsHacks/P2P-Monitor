@@ -173,6 +173,18 @@ Namespace My
                 Me("ErrorEmbedSet") = value
             End Set
         End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("")>  _
+        Public Property QuestEmbedSet() As String
+            Get
+                Return CType(Me("QuestEmbedSet"),String)
+            End Get
+            Set
+                Me("QuestEmbedSet") = value
+            End Set
+        End Property
     End Class
 End Namespace
 

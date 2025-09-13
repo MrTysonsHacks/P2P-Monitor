@@ -7,19 +7,19 @@
     <StartupObject>Sub Main</StartupObject>
     <UseWindowsForms>true</UseWindowsForms>
     <MyType>WindowsForms</MyType>
-    <ApplicationIcon>25614895.ico</ApplicationIcon>
+    <ApplicationIcon>resources\25614895.ico</ApplicationIcon>
     <Company>CaS5</Company>
     <Authors>$(Company)</Authors>
     <Copyright>CaS5 2025</Copyright>
     <PackageIcon>25614895.png</PackageIcon>
-    <FileVersion>1.1.1</FileVersion>
-    <AssemblyVersion>1.1.1</AssemblyVersion>
-    <Version>1.1.1</Version>
+    <FileVersion>1.2.0</FileVersion>
+    <AssemblyVersion>1.2.0</AssemblyVersion>
+    <Version>1.2.0</Version>
     <Description>A monitor for Aeglen's P2P Master AI that reports to specified Discord webhook</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="25614895.ico" />
+    <Content Include="resources\25614895.ico" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,7 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\..\..\Downloads\25614895.png">
+    <None Include="..\..\..\..\Downloads\25614895.png" Link="resources\25614895.png">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>

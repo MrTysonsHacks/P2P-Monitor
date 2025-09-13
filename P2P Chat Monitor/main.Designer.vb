@@ -47,6 +47,9 @@ Partial Class Form1
         txtLog = New MaterialSkin.Controls.MaterialMultiLineTextBox()
         Hamburger = New MaterialSkin.Controls.MaterialTabControl()
         discordManagement = New TabPage()
+        btnErrorEditor = New MaterialSkin.Controls.MaterialButton()
+        btnQuestEditor = New MaterialSkin.Controls.MaterialButton()
+        btnChatEditor = New MaterialSkin.Controls.MaterialButton()
         monitorManagement = New TabPage()
         txtLogDir = New MaterialSkin.Controls.MaterialTextBox()
         MaterialLabel7 = New MaterialSkin.Controls.MaterialLabel()
@@ -61,23 +64,19 @@ Partial Class Form1
         dbdiscordBtn = New MaterialSkin.Controls.MaterialButton()
         p2pdiscordBtn = New MaterialSkin.Controls.MaterialButton()
         wikiBtn = New MaterialSkin.Controls.MaterialButton()
-        TabPage1 = New TabPage()
-        resetError = New MaterialSkin.Controls.MaterialButton()
-        resetChat = New MaterialSkin.Controls.MaterialButton()
-        MaterialLabel9 = New MaterialSkin.Controls.MaterialLabel()
-        MaterialLabel8 = New MaterialSkin.Controls.MaterialLabel()
-        errorEmbed = New MaterialSkin.Controls.MaterialMultiLineTextBox()
-        chatEmbed = New MaterialSkin.Controls.MaterialMultiLineTextBox()
         ImageList1 = New ImageList(components)
         clearBtn = New MaterialSkin.Controls.MaterialButton()
         forcecheckBtn = New MaterialSkin.Controls.MaterialButton()
         testBtn = New MaterialSkin.Controls.MaterialButton()
         testEmbeds = New MaterialSkin.Controls.MaterialButton()
+        questEmbed = New MaterialSkin.Controls.MaterialMultiLineTextBox()
+        chatEmbed = New MaterialSkin.Controls.MaterialMultiLineTextBox()
+        btnCheckUpdates = New MaterialSkin.Controls.MaterialButton()
+        errorEmbed = New MaterialSkin.Controls.MaterialMultiLineTextBox()
         Hamburger.SuspendLayout()
         discordManagement.SuspendLayout()
         monitorManagement.SuspendLayout()
         helpLinks.SuspendLayout()
-        TabPage1.SuspendLayout()
         SuspendLayout()
         ' 
         ' btnBrowseLogDir
@@ -487,7 +486,6 @@ Partial Class Form1
         Hamburger.Controls.Add(discordManagement)
         Hamburger.Controls.Add(monitorManagement)
         Hamburger.Controls.Add(helpLinks)
-        Hamburger.Controls.Add(TabPage1)
         Hamburger.Depth = 0
         Hamburger.ImageList = ImageList1
         Hamburger.Location = New Point(62, 67)
@@ -500,6 +498,9 @@ Partial Class Form1
         ' 
         ' discordManagement
         ' 
+        discordManagement.Controls.Add(btnErrorEditor)
+        discordManagement.Controls.Add(btnQuestEditor)
+        discordManagement.Controls.Add(btnChatEditor)
         discordManagement.Controls.Add(errorID)
         discordManagement.Controls.Add(questID)
         discordManagement.Controls.Add(MaterialLabel2)
@@ -518,6 +519,65 @@ Partial Class Form1
         discordManagement.TabIndex = 0
         discordManagement.Text = "Discord Management"
         discordManagement.UseVisualStyleBackColor = True
+        ' 
+        ' btnErrorEditor
+        ' 
+        btnErrorEditor.AutoSize = False
+        btnErrorEditor.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        btnErrorEditor.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default
+        btnErrorEditor.Depth = 0
+        btnErrorEditor.HighEmphasis = True
+        btnErrorEditor.Icon = Nothing
+        btnErrorEditor.Location = New Point(1073, 129)
+        btnErrorEditor.Margin = New Padding(4, 6, 4, 6)
+        btnErrorEditor.MouseState = MaterialSkin.MouseState.HOVER
+        btnErrorEditor.Name = "btnErrorEditor"
+        btnErrorEditor.NoAccentTextColor = Color.Empty
+        btnErrorEditor.Size = New Size(174, 36)
+        btnErrorEditor.TabIndex = 45
+        btnErrorEditor.Text = "Error Embed Editor"
+        btnErrorEditor.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained
+        btnErrorEditor.UseAccentColor = False
+        btnErrorEditor.UseVisualStyleBackColor = True
+        ' 
+        ' btnQuestEditor
+        ' 
+        btnQuestEditor.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        btnQuestEditor.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default
+        btnQuestEditor.Depth = 0
+        btnQuestEditor.HighEmphasis = True
+        btnQuestEditor.Icon = Nothing
+        btnQuestEditor.Location = New Point(709, 129)
+        btnQuestEditor.Margin = New Padding(4, 6, 4, 6)
+        btnQuestEditor.MouseState = MaterialSkin.MouseState.HOVER
+        btnQuestEditor.Name = "btnQuestEditor"
+        btnQuestEditor.NoAccentTextColor = Color.Empty
+        btnQuestEditor.Size = New Size(174, 36)
+        btnQuestEditor.TabIndex = 44
+        btnQuestEditor.Text = "Quest Embed Editor"
+        btnQuestEditor.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained
+        btnQuestEditor.UseAccentColor = False
+        btnQuestEditor.UseVisualStyleBackColor = True
+        ' 
+        ' btnChatEditor
+        ' 
+        btnChatEditor.AutoSize = False
+        btnChatEditor.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        btnChatEditor.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default
+        btnChatEditor.Depth = 0
+        btnChatEditor.HighEmphasis = True
+        btnChatEditor.Icon = Nothing
+        btnChatEditor.Location = New Point(891, 129)
+        btnChatEditor.Margin = New Padding(4, 6, 4, 6)
+        btnChatEditor.MouseState = MaterialSkin.MouseState.HOVER
+        btnChatEditor.Name = "btnChatEditor"
+        btnChatEditor.NoAccentTextColor = Color.Empty
+        btnChatEditor.Size = New Size(174, 36)
+        btnChatEditor.TabIndex = 43
+        btnChatEditor.Text = "Chat Embed Editor"
+        btnChatEditor.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained
+        btnChatEditor.UseAccentColor = False
+        btnChatEditor.UseVisualStyleBackColor = True
         ' 
         ' monitorManagement
         ' 
@@ -787,117 +847,6 @@ Partial Class Form1
         wikiBtn.UseAccentColor = True
         wikiBtn.UseVisualStyleBackColor = True
         ' 
-        ' TabPage1
-        ' 
-        TabPage1.Controls.Add(resetError)
-        TabPage1.Controls.Add(resetChat)
-        TabPage1.Controls.Add(MaterialLabel9)
-        TabPage1.Controls.Add(MaterialLabel8)
-        TabPage1.Controls.Add(errorEmbed)
-        TabPage1.Controls.Add(chatEmbed)
-        TabPage1.ImageKey = "copy-writing.png"
-        TabPage1.Location = New Point(4, 46)
-        TabPage1.Name = "TabPage1"
-        TabPage1.Padding = New Padding(3)
-        TabPage1.Size = New Size(1254, 207)
-        TabPage1.TabIndex = 3
-        TabPage1.Text = "Embed Editor"
-        TabPage1.UseVisualStyleBackColor = True
-        ' 
-        ' resetError
-        ' 
-        resetError.AutoSize = False
-        resetError.AutoSizeMode = AutoSizeMode.GrowAndShrink
-        resetError.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default
-        resetError.Depth = 0
-        resetError.HighEmphasis = True
-        resetError.Icon = Nothing
-        resetError.Location = New Point(858, 171)
-        resetError.Margin = New Padding(4, 6, 4, 6)
-        resetError.MouseState = MaterialSkin.MouseState.HOVER
-        resetError.Name = "resetError"
-        resetError.NoAccentTextColor = Color.Empty
-        resetError.RightToLeft = RightToLeft.Yes
-        resetError.Size = New Size(168, 36)
-        resetError.TabIndex = 63
-        resetError.Text = "Reset Error Embed"
-        resetError.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained
-        resetError.UseAccentColor = False
-        resetError.UseVisualStyleBackColor = True
-        ' 
-        ' resetChat
-        ' 
-        resetChat.AutoSize = False
-        resetChat.AutoSizeMode = AutoSizeMode.GrowAndShrink
-        resetChat.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default
-        resetChat.Depth = 0
-        resetChat.HighEmphasis = True
-        resetChat.Icon = Nothing
-        resetChat.Location = New Point(227, 171)
-        resetChat.Margin = New Padding(4, 6, 4, 6)
-        resetChat.MouseState = MaterialSkin.MouseState.HOVER
-        resetChat.Name = "resetChat"
-        resetChat.NoAccentTextColor = Color.Empty
-        resetChat.RightToLeft = RightToLeft.Yes
-        resetChat.Size = New Size(168, 36)
-        resetChat.TabIndex = 64
-        resetChat.Text = "Reset Chat Embed"
-        resetChat.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained
-        resetChat.UseAccentColor = False
-        resetChat.UseVisualStyleBackColor = True
-        ' 
-        ' MaterialLabel9
-        ' 
-        MaterialLabel9.AutoSize = True
-        MaterialLabel9.Depth = 0
-        MaterialLabel9.Font = New Font("Roboto", 14F, FontStyle.Regular, GraphicsUnit.Pixel)
-        MaterialLabel9.Location = New Point(893, 0)
-        MaterialLabel9.MouseState = MaterialSkin.MouseState.HOVER
-        MaterialLabel9.Name = "MaterialLabel9"
-        MaterialLabel9.Size = New Size(87, 19)
-        MaterialLabel9.TabIndex = 4
-        MaterialLabel9.Text = "Error Embed"
-        ' 
-        ' MaterialLabel8
-        ' 
-        MaterialLabel8.AutoSize = True
-        MaterialLabel8.Depth = 0
-        MaterialLabel8.Font = New Font("Roboto", 14F, FontStyle.Regular, GraphicsUnit.Pixel)
-        MaterialLabel8.Location = New Point(271, 0)
-        MaterialLabel8.MouseState = MaterialSkin.MouseState.HOVER
-        MaterialLabel8.Name = "MaterialLabel8"
-        MaterialLabel8.Size = New Size(87, 19)
-        MaterialLabel8.TabIndex = 3
-        MaterialLabel8.Text = "Chat Embed"
-        ' 
-        ' errorEmbed
-        ' 
-        errorEmbed.BackColor = Color.FromArgb(CByte(255), CByte(255), CByte(255))
-        errorEmbed.BorderStyle = BorderStyle.None
-        errorEmbed.Depth = 0
-        errorEmbed.Font = New Font("Roboto", 14F, FontStyle.Regular, GraphicsUnit.Pixel)
-        errorEmbed.ForeColor = Color.FromArgb(CByte(222), CByte(0), CByte(0), CByte(0))
-        errorEmbed.Location = New Point(630, 22)
-        errorEmbed.MouseState = MaterialSkin.MouseState.HOVER
-        errorEmbed.Name = "errorEmbed"
-        errorEmbed.Size = New Size(618, 141)
-        errorEmbed.TabIndex = 1
-        errorEmbed.Text = resources.GetString("errorEmbed.Text")
-        ' 
-        ' chatEmbed
-        ' 
-        chatEmbed.BackColor = Color.FromArgb(CByte(255), CByte(255), CByte(255))
-        chatEmbed.BorderStyle = BorderStyle.None
-        chatEmbed.Depth = 0
-        chatEmbed.Font = New Font("Roboto", 14F, FontStyle.Regular, GraphicsUnit.Pixel)
-        chatEmbed.ForeColor = Color.FromArgb(CByte(222), CByte(0), CByte(0), CByte(0))
-        chatEmbed.Location = New Point(6, 22)
-        chatEmbed.MouseState = MaterialSkin.MouseState.HOVER
-        chatEmbed.Name = "chatEmbed"
-        chatEmbed.Size = New Size(618, 141)
-        chatEmbed.TabIndex = 0
-        chatEmbed.Text = resources.GetString("chatEmbed.Text")
-        ' 
         ' ImageList1
         ' 
         ImageList1.ColorDepth = ColorDepth.Depth32Bit
@@ -990,10 +939,76 @@ Partial Class Form1
         testEmbeds.UseAccentColor = False
         testEmbeds.UseVisualStyleBackColor = True
         ' 
+        ' questEmbed
+        ' 
+        questEmbed.BackColor = Color.FromArgb(CByte(255), CByte(255), CByte(255))
+        questEmbed.BorderStyle = BorderStyle.None
+        questEmbed.Depth = 0
+        questEmbed.Font = New Font("Roboto", 14F, FontStyle.Regular, GraphicsUnit.Pixel)
+        questEmbed.ForeColor = Color.FromArgb(CByte(222), CByte(0), CByte(0), CByte(0))
+        questEmbed.Location = New Point(6, 185)
+        questEmbed.MouseState = MaterialSkin.MouseState.HOVER
+        questEmbed.Name = "questEmbed"
+        questEmbed.Size = New Size(12, 10)
+        questEmbed.TabIndex = 63
+        questEmbed.Text = resources.GetString("questEmbed.Text")
+        ' 
+        ' chatEmbed
+        ' 
+        chatEmbed.BackColor = Color.FromArgb(CByte(255), CByte(255), CByte(255))
+        chatEmbed.BorderStyle = BorderStyle.None
+        chatEmbed.Depth = 0
+        chatEmbed.Font = New Font("Roboto", 14F, FontStyle.Regular, GraphicsUnit.Pixel)
+        chatEmbed.ForeColor = Color.FromArgb(CByte(222), CByte(0), CByte(0), CByte(0))
+        chatEmbed.Location = New Point(6, 212)
+        chatEmbed.MouseState = MaterialSkin.MouseState.HOVER
+        chatEmbed.Name = "chatEmbed"
+        chatEmbed.Size = New Size(12, 10)
+        chatEmbed.TabIndex = 64
+        chatEmbed.Text = resources.GetString("chatEmbed.Text")
+        ' 
+        ' btnCheckUpdates
+        ' 
+        btnCheckUpdates.AutoSize = False
+        btnCheckUpdates.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        btnCheckUpdates.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default
+        btnCheckUpdates.Depth = 0
+        btnCheckUpdates.HighEmphasis = True
+        btnCheckUpdates.Icon = Nothing
+        btnCheckUpdates.Location = New Point(66, 642)
+        btnCheckUpdates.Margin = New Padding(4, 6, 4, 6)
+        btnCheckUpdates.MouseState = MaterialSkin.MouseState.HOVER
+        btnCheckUpdates.Name = "btnCheckUpdates"
+        btnCheckUpdates.NoAccentTextColor = Color.Empty
+        btnCheckUpdates.Size = New Size(168, 36)
+        btnCheckUpdates.TabIndex = 65
+        btnCheckUpdates.Text = "Check For Updates"
+        btnCheckUpdates.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained
+        btnCheckUpdates.UseAccentColor = False
+        btnCheckUpdates.UseVisualStyleBackColor = True
+        ' 
+        ' errorEmbed
+        ' 
+        errorEmbed.BackColor = Color.FromArgb(CByte(255), CByte(255), CByte(255))
+        errorEmbed.BorderStyle = BorderStyle.None
+        errorEmbed.Depth = 0
+        errorEmbed.Font = New Font("Roboto", 14F, FontStyle.Regular, GraphicsUnit.Pixel)
+        errorEmbed.ForeColor = Color.FromArgb(CByte(222), CByte(0), CByte(0), CByte(0))
+        errorEmbed.Location = New Point(6, 239)
+        errorEmbed.MouseState = MaterialSkin.MouseState.HOVER
+        errorEmbed.Name = "errorEmbed"
+        errorEmbed.Size = New Size(12, 10)
+        errorEmbed.TabIndex = 66
+        errorEmbed.Text = resources.GetString("errorEmbed.Text")
+        ' 
         ' Form1
         ' 
         AutoScaleMode = AutoScaleMode.None
         ClientSize = New Size(1330, 732)
+        Controls.Add(errorEmbed)
+        Controls.Add(btnCheckUpdates)
+        Controls.Add(chatEmbed)
+        Controls.Add(questEmbed)
         Controls.Add(testEmbeds)
         Controls.Add(testBtn)
         Controls.Add(forcecheckBtn)
@@ -1012,15 +1027,13 @@ Partial Class Form1
         MaximizeBox = False
         Name = "Form1"
         Sizable = False
-        Text = "P2P Monitor v1.1.1 by CaS5"
+        Text = "P2P Monitor v1.2.0 by CaS5"
         Hamburger.ResumeLayout(False)
         discordManagement.ResumeLayout(False)
         discordManagement.PerformLayout()
         monitorManagement.ResumeLayout(False)
         monitorManagement.PerformLayout()
         helpLinks.ResumeLayout(False)
-        TabPage1.ResumeLayout(False)
-        TabPage1.PerformLayout()
         ResumeLayout(False)
     End Sub
     Friend WithEvents btnStop As MaterialSkin.Controls.MaterialButton
@@ -1069,13 +1082,13 @@ Partial Class Form1
     Friend WithEvents screenshotmode As MaterialSkin.Controls.MaterialSwitch
     Friend WithEvents txtLogDir As MaterialSkin.Controls.MaterialTextBox
     Friend WithEvents testBtn As MaterialSkin.Controls.MaterialButton
-    Friend WithEvents TabPage1 As TabPage
-    Friend WithEvents MaterialLabel9 As MaterialSkin.Controls.MaterialLabel
-    Friend WithEvents MaterialLabel8 As MaterialSkin.Controls.MaterialLabel
-    Friend WithEvents errorEmbed As MaterialSkin.Controls.MaterialMultiLineTextBox
-    Friend WithEvents chatEmbed As MaterialSkin.Controls.MaterialMultiLineTextBox
     Friend WithEvents testEmbeds As MaterialSkin.Controls.MaterialButton
-    Friend WithEvents resetError As MaterialSkin.Controls.MaterialButton
-    Friend WithEvents resetChat As MaterialSkin.Controls.MaterialButton
     Friend WithEvents MaterialMultiLineTextBox1 As MaterialSkin.Controls.MaterialMultiLineTextBox
+    Friend WithEvents btnErrorEditor As MaterialSkin.Controls.MaterialButton
+    Friend WithEvents btnQuestEditor As MaterialSkin.Controls.MaterialButton
+    Friend WithEvents btnChatEditor As MaterialSkin.Controls.MaterialButton
+    Friend WithEvents questEmbed As MaterialSkin.Controls.MaterialMultiLineTextBox
+    Friend WithEvents chatEmbed As MaterialSkin.Controls.MaterialMultiLineTextBox
+    Friend WithEvents btnCheckUpdates As MaterialSkin.Controls.MaterialButton
+    Friend WithEvents errorEmbed As MaterialSkin.Controls.MaterialMultiLineTextBox
 End Class
