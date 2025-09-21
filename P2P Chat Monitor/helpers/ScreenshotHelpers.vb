@@ -86,10 +86,19 @@ Public Class ScreenshotHelpers
         Return result
     End Function
 
-    Public Shared Function SnapAndSend(sourceLogPath As String, folderName As String, logRoot As String) As String
+    Public Shared Function SnapAndSend(sourceLogPath As String,
+                                       folderName As String,
+                                       logRoot As String,
+                                       Optional log As Action(Of String) = Nothing) As String
         Try
+            Dim baseRoot As String = logRoot
+            If String.IsNullOrWhiteSpace(baseRoot) OrElse baseRoot.Contains(";"c) Then
+                baseRoot = IO.Path.GetDirectoryName(sourceLogPath)
+            End If
+
             Dim hWnd = PickBotWindow(folderName)
             If hWnd = IntPtr.Zero Then
+                If log IsNot Nothing Then log($"⚠ No DreamBot window found for account '{folderName}'.")
                 Return ""
             End If
 
@@ -98,18 +107,23 @@ Public Class ScreenshotHelpers
 
             Dim rect As RECT
             If Not GetWindowRect(hWnd, rect) Then
+                If log IsNot Nothing Then log($"⚠ GetWindowRect failed for '{folderName}'.")
                 Return ""
             End If
 
             Dim width As Integer = rect.Right - rect.Left
             Dim height As Integer = rect.Bottom - rect.Top
+            If width <= 0 OrElse height <= 0 Then
+                If log IsNot Nothing Then log($"⚠ Invalid window size for '{folderName}': {width}x{height}")
+                Return ""
+            End If
 
             Using bmp As New Bitmap(width, height, Imaging.PixelFormat.Format32bppArgb)
                 Using g As Graphics = Graphics.FromImage(bmp)
                     g.CopyFromScreen(rect.Left, rect.Top, 0, 0, New Size(width, height), CopyPixelOperation.SourceCopy)
                 End Using
 
-                Dim folderDir As String = IO.Path.Combine(logRoot, folderName)
+                Dim folderDir = IO.Path.Combine(baseRoot, folderName)
                 If Not IO.Directory.Exists(folderDir) Then
                     IO.Directory.CreateDirectory(folderDir)
                 End If
@@ -118,13 +132,15 @@ Public Class ScreenshotHelpers
                 Dim filePath As String = IO.Path.Combine(folderDir, $"dreambot_screenshot_{timestamp}.png")
 
                 bmp.Save(filePath, Imaging.ImageFormat.Png)
-
                 Return filePath
             End Using
 
         Catch ex As Exception
+            If log IsNot Nothing Then log($"⚠ Exception capturing screenshot for '{folderName}': {ex.Message}")
             Return ""
         End Try
     End Function
+
+
 
 End Class

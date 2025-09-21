@@ -193,15 +193,28 @@ Public Class DiscordHelpers
     End Function
 
 
-    Public Shared Function BuildQuestPayload(template As String, mention As String, segment As String,
-                                      filename As String, folder As String,
-                                      timestamp As String, index As Integer) As String
-        Return template _
+    Public Shared Function BuildQuestPayload(template As String,
+                                             mention As String,
+                                             segment As String,
+                                             screenshotRef As String,
+                                             filename As String,
+                                             folder As String,
+                                             timestamp As String,
+                                             index As Integer) As String
+        Dim payload = template _
             .Replace("{mention}", JsonSafe(mention)) _
             .Replace("{segment}", JsonSafe(segment)) _
+            .Replace("{screenshot}", screenshotRef) _
             .Replace("{filename}", JsonSafe(filename)) _
             .Replace("{folder}", JsonSafe(folder)) _
             .Replace("{time}", timestamp) _
             .Replace("{index}", index.ToString())
+
+        If String.IsNullOrWhiteSpace(screenshotRef) Then
+            payload = payload.Replace("""image"": {""url"": ""attachment://""},", "")
+            payload = payload.Replace("""image"": {""url"": ""attachment://""}", "")
+        End If
+
+        Return payload
     End Function
 End Class

@@ -33,7 +33,7 @@ Namespace My
         
         <Global.System.Diagnostics.DebuggerStepThroughAttribute()>  _
         Protected Overrides Sub OnCreateMainForm()
-            Me.MainForm = Global.P2P_Chat_Monitor.Form1
+            Me.MainForm = Global.P2P_Chat_Monitor.main
         End Sub
         
         <Global.System.Diagnostics.DebuggerStepThroughAttribute()>  _

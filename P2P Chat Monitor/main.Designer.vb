@@ -1,5 +1,5 @@
 ﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>
-Partial Class Form1
+Partial Class main
     Inherits MaterialSkin.Controls.MaterialForm
 
     <System.Diagnostics.DebuggerNonUserCode()>
@@ -18,7 +18,7 @@ Partial Class Form1
     <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
         components = New ComponentModel.Container()
-        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(Form1))
+        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(main))
         btnBrowseLogDir = New MaterialSkin.Controls.MaterialButton()
         btnStart = New MaterialSkin.Controls.MaterialButton()
         btnStop = New MaterialSkin.Controls.MaterialButton()
@@ -43,7 +43,6 @@ Partial Class Form1
         combatError = New MaterialSkin.Controls.MaterialSwitch()
         questError = New MaterialSkin.Controls.MaterialSwitch()
         skillIssue = New MaterialSkin.Controls.MaterialSwitch()
-        chatErrors = New MaterialSkin.Controls.MaterialSwitch()
         txtLog = New MaterialSkin.Controls.MaterialMultiLineTextBox()
         Hamburger = New MaterialSkin.Controls.MaterialTabControl()
         discordManagement = New TabPage()
@@ -178,9 +177,9 @@ Partial Class Form1
         captureWin.MouseState = MaterialSkin.MouseState.HOVER
         captureWin.Name = "captureWin"
         captureWin.Ripple = True
-        captureWin.Size = New Size(232, 37)
+        captureWin.Size = New Size(299, 37)
         captureWin.TabIndex = 26
-        captureWin.Text = "Take Screenshots (Chat)"
+        captureWin.Text = "Take Screenshots (Chat & Quests)"
         captureWin.UseVisualStyleBackColor = True
         ' 
         ' autoClean
@@ -449,22 +448,6 @@ Partial Class Form1
         skillIssue.Text = "Skilling Errors"
         skillIssue.UseVisualStyleBackColor = True
         ' 
-        ' chatErrors
-        ' 
-        chatErrors.AutoSize = True
-        chatErrors.Depth = 0
-        chatErrors.Enabled = False
-        chatErrors.Location = New Point(319, 160)
-        chatErrors.Margin = New Padding(0)
-        chatErrors.MouseLocation = New Point(-1, -1)
-        chatErrors.MouseState = MaterialSkin.MouseState.HOVER
-        chatErrors.Name = "chatErrors"
-        chatErrors.Ripple = True
-        chatErrors.Size = New Size(136, 37)
-        chatErrors.TabIndex = 49
-        chatErrors.Text = "Chat Errors"
-        chatErrors.UseVisualStyleBackColor = True
-        ' 
         ' txtLog
         ' 
         txtLog.BackColor = Color.FromArgb(CByte(255), CByte(255), CByte(255))
@@ -585,7 +568,6 @@ Partial Class Form1
         monitorManagement.Controls.Add(MaterialLabel7)
         monitorManagement.Controls.Add(screenshotmode)
         monitorManagement.Controls.Add(btnBrowseLogDir)
-        monitorManagement.Controls.Add(chatErrors)
         monitorManagement.Controls.Add(chkMonitorChat)
         monitorManagement.Controls.Add(numIntervalSecond)
         monitorManagement.Controls.Add(monitorQuest)
@@ -1027,7 +1009,7 @@ Partial Class Form1
         MaximizeBox = False
         Name = "Form1"
         Sizable = False
-        Text = "P2P Monitor v1.2.1 by CaS5"
+        Text = "P2P Monitor v1.2.3 by CaS5"
         Hamburger.ResumeLayout(False)
         discordManagement.ResumeLayout(False)
         discordManagement.PerformLayout()
@@ -1060,7 +1042,6 @@ Partial Class Form1
     Friend WithEvents combatError As MaterialSkin.Controls.MaterialSwitch
     Friend WithEvents questError As MaterialSkin.Controls.MaterialSwitch
     Friend WithEvents skillIssue As MaterialSkin.Controls.MaterialSwitch
-    Friend WithEvents chatErrors As MaterialSkin.Controls.MaterialSwitch
     Friend WithEvents MaterialExpansionPanel1 As MaterialSkin.Controls.MaterialExpansionPanel
     Friend WithEvents txtLog As MaterialSkin.Controls.MaterialMultiLineTextBox
     Friend WithEvents Hamburger As MaterialSkin.Controls.MaterialTabControl

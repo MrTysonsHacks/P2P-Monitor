@@ -14,7 +14,7 @@ Imports Newtonsoft.Json.Linq
 Imports System.Net.Http
 Imports System.Reflection
 
-Public Class Form1
+Public Class main
     Private Shared ReadOnly http As New Net.Http.HttpClient()
     Private robotoFont As Font = New Font("Roboto", 12.0F, FontStyle.Bold)
     Private monitoring As Boolean = False
@@ -46,6 +46,10 @@ Public Class Form1
 
     Private combatFailureTriggers As New List(Of Regex)
     Private combatFailureReasons As New List(Of KeyValuePair(Of Regex, String))
+
+    Private botFailureTriggers As New List(Of Regex)
+    Private botFailureReasons As New List(Of KeyValuePair(Of Regex, String))
+
     Private Sub addFailRule(category As String, pattern As String, Optional friendlyText As String = Nothing, Optional isTrigger As Boolean = True)
 
         Dim regex As New Regex(Regex.Escape(pattern), RegexOptions.IgnoreCase)
@@ -70,6 +74,13 @@ Public Class Form1
                     combatFailureTriggers.Add(regex)
                 Else
                     combatFailureReasons.Add(New KeyValuePair(Of Regex, String)(regex, friendlyText))
+                End If
+
+            Case "bot"
+                If isTrigger Then
+                    botFailureTriggers.Add(regex)
+                Else
+                    botFailureReasons.Add(New KeyValuePair(Of Regex, String)(regex, friendlyText))
                 End If
         End Select
     End Sub
@@ -114,7 +125,6 @@ Public Class Form1
         combatError.Visible = False
         questError.Visible = False
         skillIssue.Visible = False
-        chatErrors.Visible = False
         txtLog.Font = robotoFont
 
         If String.IsNullOrWhiteSpace(My.Settings.ChatEmbedSet) Then
@@ -143,7 +153,6 @@ Public Class Form1
         combatError.Visible = show
         questError.Visible = show
         skillIssue.Visible = show
-        chatErrors.Visible = show
     End Sub
     Private Sub ToggleDarkMode(sender As Object, e As EventArgs) Handles DarkModeEnabled.CheckedChanged
 
@@ -333,6 +342,8 @@ Public Class Form1
             skillFailureReasons.Clear()
             combatFailureTriggers.Clear()
             combatFailureReasons.Clear()
+            botFailureTriggers.Clear()
+            botFailureReasons.Clear()
 
             For i = 1 To lines.Length - 1
                 Dim parts = lines(i).Split(","c)
@@ -344,7 +355,7 @@ Public Class Form1
                 Dim friendly = If(parts.Length > 3, parts(3).Trim(), "")
 
                 Select Case category
-                    Case "quest", "skill", "combat"
+                    Case "quest", "skill", "combat", "bot"
                         If entryType = "trigger" Then
                             addFailRule(category, pattern, isTrigger:=True)
                         ElseIf entryType = "reason" Then
@@ -369,8 +380,9 @@ Public Class Form1
 
             Dim screenshotPath As String = Nothing
             Dim screenshotRef As String = ""
+            Dim outputRoot As String = IO.Path.GetDirectoryName(path)
             If takeScreenshots Then
-                screenshotPath = ScreenshotHelpers.SnapAndSend(path, GetFolderName(path), LOG_DIR)
+                screenshotPath = ScreenshotHelpers.SnapAndSend(path, GetFolderName(path), outputRoot, AddressOf AppendLog)
                 If Not String.IsNullOrWhiteSpace(screenshotPath) AndAlso IO.File.Exists(screenshotPath) Then
                     screenshotRef = IO.Path.GetFileName(screenshotPath)
                     AppendLog("📸 Screenshot captured.")
@@ -408,6 +420,7 @@ Public Class Form1
                 questEmbed.Text,
                 DISCORD_MENTION,
                 questText,
+                screenshotRef,
                 IO.Path.GetFileName(path),
                 GetFolderName(path),
                 DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
@@ -628,6 +641,7 @@ Public Class Form1
         questEmbed.Text.Trim(),
         DISCORD_MENTION,
         "Simulated quest text",
+        screenshotRef,
         filename,
         GetFolderName(filePath),
         DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
@@ -636,7 +650,7 @@ Public Class Form1
 
             Dim err As String = Nothing
             If DiscordHelpers.IsJson(payload, err) Then
-                Await DiscordHelpers.PostJson(questWebhook, payload)   ' 👈 use textbox value
+                Await DiscordHelpers.PostJson(questWebhook, payload)
                 AppendLog("✅ Test Quest embed sent.")
             Else
                 AppendLog($"⚠ Invalid JSON in Quest embed: {err}")
