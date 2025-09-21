@@ -983,7 +983,7 @@ Partial Class main
         errorEmbed.TabIndex = 66
         errorEmbed.Text = resources.GetString("errorEmbed.Text")
         ' 
-        ' Form1
+        ' main
         ' 
         AutoScaleMode = AutoScaleMode.None
         ClientSize = New Size(1330, 732)
@@ -1007,9 +1007,9 @@ Partial Class main
         Font = New Font("Roboto", 15.75F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         Icon = CType(resources.GetObject("$this.Icon"), Icon)
         MaximizeBox = False
-        Name = "Form1"
+        Name = "main"
         Sizable = False
-        Text = "P2P Monitor v1.2.3 by CaS5"
+        Text = "P2P Monitor v1.2.4 by CaS5"
         Hamburger.ResumeLayout(False)
         discordManagement.ResumeLayout(False)
         discordManagement.PerformLayout()

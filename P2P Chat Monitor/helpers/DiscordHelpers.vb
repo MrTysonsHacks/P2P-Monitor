@@ -118,6 +118,9 @@ Public Class DiscordHelpers
       ""footer"": {
         ""text"": ""P2P Monitor Detection System - {time}""
       },
+      ""image"": {
+        ""url"": ""attachment://{screenshot}""
+      },
       ""color"": 6029136
     }
   ]
@@ -183,7 +186,6 @@ Public Class DiscordHelpers
         .Replace("{time}", timestamp) _
         .Replace("{index}", index.ToString())
 
-        ' Remove the image block entirely if screenshotRef is empty
         If String.IsNullOrWhiteSpace(screenshotRef) Then
             payload = payload.Replace("""image"": {""url"": ""attachment://""},", "")
             payload = payload.Replace("""image"": {""url"": ""attachment://""}", "")

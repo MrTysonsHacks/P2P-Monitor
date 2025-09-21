@@ -1,7 +1,12 @@
 Imports System.IO
 Imports System.Text.RegularExpressions
+Imports System.Collections.Generic
 
 Public Class LogHelper
+
+    Private Shared ReadOnly LogLevels As HashSet(Of String) =
+        New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {"INFO", "DEBUG", "WARN", "ERROR", "TRACE", "FATAL"}
+
     Public Shared Async Function OnLogChanged(sender As Object, e As FileSystemEventArgs,
                                 monitoring As Boolean,
                                 lastOffsets As Dictionary(Of String, Long),
@@ -57,18 +62,18 @@ Public Class LogHelper
                 Dim chatSegments = SliceChatSegments(onlyNew)
                 If chatSegments.Count > 0 Then
                     AppendLog($"📨 Found {chatSegments.Count} chat event(s)")
+
                     If takeScreenshots Then
                         Dim folderName As String = GetFolderName(path)
                         Dim logRoot As String = System.IO.Path.GetDirectoryName(path)
-
                         Dim screenshotPath As String = ScreenshotHelpers.SnapAndSend(path, folderName, logRoot)
-
                         If Not String.IsNullOrWhiteSpace(screenshotPath) Then
                             AppendLog("📸 Screenshot captured.")
                         Else
                             AppendLog("⚠ DreamBot window not found or failed to capture screenshot.")
                         End If
                     End If
+
                     Await SendSegments(chatSegments, path, "P2P Chat Event", &H7289DA)
                 End If
             End If
@@ -84,24 +89,36 @@ Public Class LogHelper
             If questError Then
                 Dim questFailures = ScanFailures(onlyNew, questFailureTriggers, questFailureReasons, "Quest")
                 For Each failure In questFailures
-                    AppendLog($"❌ Quest Failure detected: {failure.Trigger} / {failure.Reason}")
-                    Await PostFailAlert(failure.Trigger, failure.Reason, path, "Quest")
+                    Dim reasonOut = failure.Reason
+                    If Not String.IsNullOrWhiteSpace(failure.Extra) Then
+                        reasonOut &= $" ({failure.Extra})"
+                    End If
+                    AppendLog($"❌ Quest Failure detected: {failure.Trigger} / {reasonOut}")
+                    Await PostFailAlert(failure.Trigger, reasonOut, path, "Quest")
                 Next
             End If
 
             If skillIssue Then
                 Dim skillFailures = ScanFailures(onlyNew, skillFailureTriggers, skillFailureReasons, "Skill")
                 For Each failure In skillFailures
-                    AppendLog($"❌ Skill Failure detected: {failure.Trigger} / {failure.Reason}")
-                    Await PostFailAlert(failure.Trigger, failure.Reason, path, "Skill")
+                    Dim reasonOut = failure.Reason
+                    If Not String.IsNullOrWhiteSpace(failure.Extra) Then
+                        reasonOut &= $" ({failure.Extra})"
+                    End If
+                    AppendLog($"❌ Skill Failure detected: {failure.Trigger} / {reasonOut}")
+                    Await PostFailAlert(failure.Trigger, reasonOut, path, "Skill")
                 Next
             End If
 
             If combatError Then
                 Dim combatFailures = ScanFailures(onlyNew, combatFailureTriggers, combatFailureReasons, "Combat")
                 For Each failure In combatFailures
-                    AppendLog($"❌ Combat Failure detected: {failure.Trigger} / {failure.Reason}")
-                    Await PostFailAlert(failure.Trigger, failure.Reason, path, "Combat")
+                    Dim reasonOut = failure.Reason
+                    If Not String.IsNullOrWhiteSpace(failure.Extra) Then
+                        reasonOut &= $" ({failure.Extra})"
+                    End If
+                    AppendLog($"❌ Combat Failure detected: {failure.Trigger} / {reasonOut}")
+                    Await PostFailAlert(failure.Trigger, reasonOut, path, "Combat")
                 Next
             End If
 
@@ -137,7 +154,6 @@ Public Class LogHelper
             logAction($"No new entries. (Interval {checkInterval} seconds)")
         End If
     End Sub
-
 
     Public Shared Sub JumpToEnd(path As String, lastOffsets As Dictionary(Of String, Long), lastProcessedTimes As Dictionary(Of String, DateTime?))
         Try
@@ -230,19 +246,19 @@ Public Class LogHelper
         Next
         Return quests
     End Function
-
     Public Shared Function ScanFailures(lines As List(Of String),
                                         triggers As List(Of Regex),
                                         reasons As List(Of KeyValuePair(Of Regex, String)),
-                                        failureType As String) As List(Of (Trigger As String, Reason As String))
+                                        failureType As String) As List(Of (Trigger As String, Reason As String, Extra As String))
 
-        Dim results As New List(Of (Trigger As String, Reason As String))
+        Dim results As New List(Of (Trigger As String, Reason As String, Extra As String))
 
         For i = 0 To lines.Count - 1
             Dim currentLine = lines(i)
             If triggers.Any(Function(rx) rx.IsMatch(currentLine)) Then
                 Dim matchedReason As String = Nothing
 
+                ' Look around nearby lines for a friendly reason
                 Dim startIdx = Math.Max(0, i - 10)
                 Dim endIdx = Math.Min(lines.Count - 1, i + 10)
 
@@ -260,10 +276,34 @@ Public Class LogHelper
                     matchedReason = "Unknown reason, please send logs to CaS5"
                 End If
 
-                results.Add((currentLine, matchedReason))
+                Dim extra As String = ExtractExtraFromContext(lines, i)
+
+                results.Add((currentLine, matchedReason, extra))
             End If
         Next
 
         Return results
     End Function
+    Private Shared Function ExtractExtraFromContext(lines As List(Of String), center As Integer) As String
+        Dim startIdx = Math.Max(0, center - 10)
+        Dim endIdx = Math.Min(lines.Count - 1, center + 10)
+
+        ' 1) Prefer: Resource check failed [ ... ]
+        For j = endIdx To startIdx Step -1
+            Dim m = Regex.Match(lines(j), "Resource check failed\s*\[(.*?)\]", RegexOptions.IgnoreCase)
+            If m.Success Then Return m.Groups(1).Value
+        Next
+        For j = endIdx To startIdx Step -1
+            Dim ms = Regex.Matches(lines(j), "\[(.*?)\]")
+            For k = ms.Count - 1 To 0 Step -1
+                Dim content = ms(k).Groups(1).Value.Trim()
+                If Not LogLevels.Contains(content) AndAlso content.Length > 1 AndAlso content.IndexOfAny(New Char() {","c, " "c}) >= 0 Then
+                    Return content
+                End If
+            Next
+        Next
+
+        Return ""
+    End Function
+
 End Class
