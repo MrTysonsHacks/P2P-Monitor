@@ -3,7 +3,10 @@ Imports System.Drawing
 Imports System.Drawing.Imaging
 Imports System.IO
 Imports System.Net
+Imports System.Net.Http
+Imports System.Reflection
 Imports System.Runtime.InteropServices
+Imports System.Text
 Imports System.Text.RegularExpressions
 Imports System.Threading
 Imports System.Threading.Tasks
@@ -11,8 +14,7 @@ Imports MaterialSkin
 Imports MaterialSkin.Controls
 Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
-Imports System.Net.Http
-Imports System.Reflection
+Imports P2P_Chat_Monitor.My
 
 Public Class main
     Private Shared ReadOnly http As New Net.Http.HttpClient()
@@ -115,16 +117,19 @@ Public Class main
         chatEmbed.Text = My.Settings.ChatEmbedSet
         errorEmbed.Text = My.Settings.ErrorEmbedSet
         questEmbed.Text = My.Settings.QuestEmbedSet
+        chkMonitorChat.Checked = My.Settings.CheckChat
+        monitorQuest.Checked = My.Settings.CheckQuest
+        captureWin.Checked = My.Settings.TakeScreenshots
+        autoClean.Checked = My.Settings.AutoDelete
+        combatError.Checked = My.Settings.CheckCombatErr
+        questError.Checked = My.Settings.CheckQuestsErr
+        skillIssue.Checked = My.Settings.CheckSkillsErr
 
         numIntervalSecond.Value = If(My.Settings.CheckInterval > 0, My.Settings.CheckInterval, 5)
         DarkModeEnabled.Checked = My.Settings.DarkModeOn
         Dim SkinManager As MaterialSkinManager = MaterialSkinManager.Instance
         SkinManager.AddFormToManage(Me)
         ApplyTheme(DarkModeEnabled.Checked)
-
-        combatError.Visible = False
-        questError.Visible = False
-        skillIssue.Visible = False
         txtLog.Font = robotoFont
 
         If String.IsNullOrWhiteSpace(My.Settings.ChatEmbedSet) Then
@@ -146,13 +151,6 @@ Public Class main
         errorEmbed.Text = My.Settings.ErrorEmbedSet
         'possibly move failure rules to a more permanent solution in the future
         Await FetchFailRules()
-    End Sub
-    Private Sub ToggleErrorPanel(sender As Object, e As EventArgs) Handles monitorError.CheckedChanged
-
-        Dim show As Boolean = monitorError.Checked
-        combatError.Visible = show
-        questError.Visible = show
-        skillIssue.Visible = show
     End Sub
     Private Sub ToggleDarkMode(sender As Object, e As EventArgs) Handles DarkModeEnabled.CheckedChanged
 
@@ -203,6 +201,13 @@ Public Class main
         My.Settings.ChatEmbedSet = chatEmbed.Text
         My.Settings.ErrorEmbedSet = errorEmbed.Text
         My.Settings.QuestEmbedSet = questEmbed.Text
+        My.Settings.CheckChat = chkMonitorChat.Checked
+        My.Settings.CheckQuest = monitorQuest.Checked
+        My.Settings.TakeScreenshots = captureWin.Checked
+        My.Settings.AutoDelete = autoClean.Checked
+        My.Settings.CheckCombatErr = combatError.Checked
+        My.Settings.CheckSkillsErr = skillIssue.Checked
+        My.Settings.CheckQuestsErr = questError.Checked
         My.Settings.Save()
 
         WEBHOOK_URL = My.Settings.WebhookURL
@@ -254,12 +259,21 @@ Public Class main
 
         monitoring = True
         watchers.Clear()
-
         For Each folder In logDirs
             For Each f In Directory.GetFiles(folder, "logfile-*.log", SearchOption.TopDirectoryOnly)
                 LogHelper.JumpToEnd(f, lastOffsets, lastProcessedTimes)
             Next
         Next
+
+        LogHelper.ResetSeen()
+        Dim latestPer = LogHelper.GetLatestPerFolder(LOG_DIR)
+        LogHelper.AnnounceLatestOnce(latestPer, AddressOf AppendLog, lastOffsets, lastProcessedTimes)
+        For Each folder In logDirs
+            For Each f In Directory.GetFiles(folder, "logfile-*.log", SearchOption.TopDirectoryOnly)
+                LogHelper.JumpToEnd(f, lastOffsets, lastProcessedTimes)
+            Next
+        Next
+
         Dim latest = LogHelper.GetLatestLogFile(LOG_DIR)
         For Each folder In logDirs
             Dim watcher As New FileSystemWatcher(folder, "logfile-*.log")
@@ -690,5 +704,23 @@ Public Class main
     End Sub
     Private Async Sub btnCheckUpdates_Click(sender As Object, e As EventArgs) Handles btnCheckUpdates.Click
         Await UpdateHelper.CheckForUpdates(AddressOf AppendLog)
+    End Sub
+    Private Sub btnCleanLog_Click(sender As Object, e As EventArgs) Handles btnCleanLog.Click
+        Try
+            Using dlg As New CleanLogForm(LOG_DIR, AddressOf AppendLog)
+                Dim result = dlg.ShowDialog(Me)
+                If result = DialogResult.OK AndAlso Not String.IsNullOrWhiteSpace(dlg.OutputPath) Then
+                    AppendLog($"Cleaned log saved: {dlg.OutputPath}")
+                    Try
+                        Process.Start("explorer.exe", "/select,""" & dlg.OutputPath & """")
+                    Catch
+                    End Try
+                Else
+                    AppendLog("Clean log cancelled.")
+                End If
+            End Using
+        Catch ex As Exception
+            AppendLog($"Clean log failed: {ex.Message}")
+        End Try
     End Sub
 End Class

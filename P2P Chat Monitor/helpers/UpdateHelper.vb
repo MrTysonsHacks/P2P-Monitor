@@ -2,7 +2,7 @@
 Imports System.Net.Http
 
 Public Class UpdateHelper
-    Private Shared ReadOnly currentVersion As Version = New Version("1.2.4")
+    Private Shared ReadOnly currentVersion As Version = New Version("1.3.0")
 
     Public Shared Async Function CheckForUpdates(logAction As Action(Of String)) As Task
         Try

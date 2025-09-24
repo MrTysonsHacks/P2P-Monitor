@@ -26,7 +26,6 @@ Partial Class main
         monitorQuest = New MaterialSkin.Controls.MaterialSwitch()
         captureWin = New MaterialSkin.Controls.MaterialSwitch()
         autoClean = New MaterialSkin.Controls.MaterialSwitch()
-        monitorError = New MaterialSkin.Controls.MaterialSwitch()
         DarkModeEnabled = New MaterialSkin.Controls.MaterialSwitch()
         numIntervalSecond = New MaterialSkin.Controls.MaterialSlider()
         MaterialLabel1 = New MaterialSkin.Controls.MaterialLabel()
@@ -72,6 +71,7 @@ Partial Class main
         chatEmbed = New MaterialSkin.Controls.MaterialMultiLineTextBox()
         btnCheckUpdates = New MaterialSkin.Controls.MaterialButton()
         errorEmbed = New MaterialSkin.Controls.MaterialMultiLineTextBox()
+        btnCleanLog = New MaterialSkin.Controls.MaterialButton()
         Hamburger.SuspendLayout()
         discordManagement.SuspendLayout()
         monitorManagement.SuspendLayout()
@@ -140,6 +140,7 @@ Partial Class main
         ' chkMonitorChat
         ' 
         chkMonitorChat.AutoSize = True
+        chkMonitorChat.BackColor = SystemColors.Control
         chkMonitorChat.Depth = 0
         chkMonitorChat.Location = New Point(5, 12)
         chkMonitorChat.Margin = New Padding(0)
@@ -150,7 +151,7 @@ Partial Class main
         chkMonitorChat.Size = New Size(201, 37)
         chkMonitorChat.TabIndex = 24
         chkMonitorChat.Text = "Monitor Chat Events"
-        chkMonitorChat.UseVisualStyleBackColor = True
+        chkMonitorChat.UseVisualStyleBackColor = False
         ' 
         ' monitorQuest
         ' 
@@ -196,21 +197,6 @@ Partial Class main
         autoClean.TabIndex = 27
         autoClean.Text = "Auto-Delete Local Screenshots"
         autoClean.UseVisualStyleBackColor = True
-        ' 
-        ' monitorError
-        ' 
-        monitorError.AutoSize = True
-        monitorError.Depth = 0
-        monitorError.Location = New Point(319, 12)
-        monitorError.Margin = New Padding(0)
-        monitorError.MouseLocation = New Point(-1, -1)
-        monitorError.MouseState = MaterialSkin.MouseState.HOVER
-        monitorError.Name = "monitorError"
-        monitorError.Ripple = True
-        monitorError.Size = New Size(215, 37)
-        monitorError.TabIndex = 28
-        monitorError.Text = "Monitor Error Reasons"
-        monitorError.UseVisualStyleBackColor = True
         ' 
         ' DarkModeEnabled
         ' 
@@ -407,7 +393,7 @@ Partial Class main
         ' 
         combatError.AutoSize = True
         combatError.Depth = 0
-        combatError.Location = New Point(319, 49)
+        combatError.Location = New Point(314, 12)
         combatError.Margin = New Padding(0)
         combatError.MouseLocation = New Point(-1, -1)
         combatError.MouseState = MaterialSkin.MouseState.HOVER
@@ -422,7 +408,7 @@ Partial Class main
         ' 
         questError.AutoSize = True
         questError.Depth = 0
-        questError.Location = New Point(319, 86)
+        questError.Location = New Point(314, 49)
         questError.Margin = New Padding(0)
         questError.MouseLocation = New Point(-1, -1)
         questError.MouseState = MaterialSkin.MouseState.HOVER
@@ -437,7 +423,7 @@ Partial Class main
         ' 
         skillIssue.AutoSize = True
         skillIssue.Depth = 0
-        skillIssue.Location = New Point(319, 123)
+        skillIssue.Location = New Point(314, 86)
         skillIssue.Margin = New Padding(0)
         skillIssue.MouseLocation = New Point(-1, -1)
         skillIssue.MouseState = MaterialSkin.MouseState.HOVER
@@ -564,6 +550,7 @@ Partial Class main
         ' 
         ' monitorManagement
         ' 
+        monitorManagement.Controls.Add(btnCleanLog)
         monitorManagement.Controls.Add(txtLogDir)
         monitorManagement.Controls.Add(MaterialLabel7)
         monitorManagement.Controls.Add(screenshotmode)
@@ -577,7 +564,6 @@ Partial Class main
         monitorManagement.Controls.Add(questError)
         monitorManagement.Controls.Add(autoClean)
         monitorManagement.Controls.Add(combatError)
-        monitorManagement.Controls.Add(monitorError)
         monitorManagement.Controls.Add(DarkModeEnabled)
         monitorManagement.ImageKey = "monitoring.png"
         monitorManagement.Location = New Point(4, 46)
@@ -611,7 +597,7 @@ Partial Class main
         MaterialLabel7.Depth = 0
         MaterialLabel7.Font = New Font("Roboto", 10F, FontStyle.Regular, GraphicsUnit.Pixel)
         MaterialLabel7.FontType = MaterialSkin.MaterialSkinManager.fontType.Overline
-        MaterialLabel7.Location = New Point(844, 194)
+        MaterialLabel7.Location = New Point(322, 155)
         MaterialLabel7.MouseState = MaterialSkin.MouseState.HOVER
         MaterialLabel7.Name = "MaterialLabel7"
         MaterialLabel7.Size = New Size(252, 13)
@@ -623,7 +609,7 @@ Partial Class main
         ' 
         screenshotmode.AutoSize = True
         screenshotmode.Depth = 0
-        screenshotmode.Location = New Point(849, 160)
+        screenshotmode.Location = New Point(314, 123)
         screenshotmode.Margin = New Padding(0)
         screenshotmode.MouseLocation = New Point(-1, -1)
         screenshotmode.MouseState = MaterialSkin.MouseState.HOVER
@@ -847,7 +833,7 @@ Partial Class main
         clearBtn.Depth = 0
         clearBtn.HighEmphasis = True
         clearBtn.Icon = Nothing
-        clearBtn.Location = New Point(66, 690)
+        clearBtn.Location = New Point(66, 687)
         clearBtn.Margin = New Padding(4, 6, 4, 6)
         clearBtn.MouseState = MaterialSkin.MouseState.HOVER
         clearBtn.Name = "clearBtn"
@@ -957,7 +943,7 @@ Partial Class main
         btnCheckUpdates.Depth = 0
         btnCheckUpdates.HighEmphasis = True
         btnCheckUpdates.Icon = Nothing
-        btnCheckUpdates.Location = New Point(66, 642)
+        btnCheckUpdates.Location = New Point(66, 639)
         btnCheckUpdates.Margin = New Padding(4, 6, 4, 6)
         btnCheckUpdates.MouseState = MaterialSkin.MouseState.HOVER
         btnCheckUpdates.Name = "btnCheckUpdates"
@@ -982,6 +968,26 @@ Partial Class main
         errorEmbed.Size = New Size(12, 10)
         errorEmbed.TabIndex = 66
         errorEmbed.Text = resources.GetString("errorEmbed.Text")
+        ' 
+        ' btnCleanLog
+        ' 
+        btnCleanLog.AutoSize = False
+        btnCleanLog.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        btnCleanLog.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default
+        btnCleanLog.Depth = 0
+        btnCleanLog.HighEmphasis = True
+        btnCleanLog.Icon = Nothing
+        btnCleanLog.Location = New Point(849, 126)
+        btnCleanLog.Margin = New Padding(4, 6, 4, 6)
+        btnCleanLog.MouseState = MaterialSkin.MouseState.HOVER
+        btnCleanLog.Name = "btnCleanLog"
+        btnCleanLog.NoAccentTextColor = Color.Empty
+        btnCleanLog.Size = New Size(168, 36)
+        btnCleanLog.TabIndex = 67
+        btnCleanLog.Text = "Clean Log File"
+        btnCleanLog.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained
+        btnCleanLog.UseAccentColor = False
+        btnCleanLog.UseVisualStyleBackColor = True
         ' 
         ' main
         ' 
@@ -1009,7 +1015,7 @@ Partial Class main
         MaximizeBox = False
         Name = "main"
         Sizable = False
-        Text = "P2P Monitor v1.2.4 by CaS5"
+        Text = "P2P Monitor v1.3.0 by CaS5"
         Hamburger.ResumeLayout(False)
         discordManagement.ResumeLayout(False)
         discordManagement.PerformLayout()
@@ -1025,7 +1031,6 @@ Partial Class main
     Friend WithEvents monitorQuest As MaterialSkin.Controls.MaterialSwitch
     Friend WithEvents captureWin As MaterialSkin.Controls.MaterialSwitch
     Friend WithEvents autoClean As MaterialSkin.Controls.MaterialSwitch
-    Friend WithEvents monitorError As MaterialSkin.Controls.MaterialSwitch
     Friend WithEvents DarkModeEnabled As MaterialSkin.Controls.MaterialSwitch
     Friend WithEvents numIntervalSecond As MaterialSkin.Controls.MaterialSlider
     Friend WithEvents MaterialLabel1 As MaterialSkin.Controls.MaterialLabel
@@ -1072,4 +1077,5 @@ Partial Class main
     Friend WithEvents chatEmbed As MaterialSkin.Controls.MaterialMultiLineTextBox
     Friend WithEvents btnCheckUpdates As MaterialSkin.Controls.MaterialButton
     Friend WithEvents errorEmbed As MaterialSkin.Controls.MaterialMultiLineTextBox
+    Friend WithEvents btnCleanLog As MaterialSkin.Controls.MaterialButton
 End Class

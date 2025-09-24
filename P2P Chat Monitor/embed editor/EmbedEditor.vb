@@ -1,5 +1,6 @@
 ﻿Imports MaterialSkin
 Imports MaterialSkin.Controls
+Imports System.Text
 
 Public Class EmbedEditor
     Inherits MaterialForm
@@ -10,63 +11,80 @@ Public Class EmbedEditor
     Private txtEditor As MaterialMultiLineTextBox
     Private btnSave As MaterialButton
     Private btnReset As MaterialButton
+    Private btnCancel As MaterialButton
 
     Public Sub New(initialText As String, title As String, defaultTemplate As String, darkMode As Boolean)
-        ' Apply MaterialSkin styling
+        ' Theme hookup
         Dim skinManager = MaterialSkinManager.Instance
         skinManager.AddFormToManage(Me)
+
         If darkMode Then
             skinManager.Theme = MaterialSkinManager.Themes.DARK
-            skinManager.ColorScheme = New ColorScheme(Primary.Grey800, Primary.Grey900, Primary.Grey500, Accent.LightBlue200, TextShade.WHITE)
         Else
             skinManager.Theme = MaterialSkinManager.Themes.LIGHT
-            skinManager.ColorScheme = New ColorScheme(Primary.BlueGrey800, Primary.BlueGrey900, Primary.BlueGrey500, Accent.LightBlue200, TextShade.WHITE)
         End If
 
-        Me.Text = title
-        Me.Size = New Size(600, 450)
-        Me.DefaultTemplate = defaultTemplate
+        ' Center this window over the owner
+        Me.StartPosition = FormStartPosition.CenterParent
+        Me.Sizable = True
+        Me.Text = If(String.IsNullOrWhiteSpace(title), "Embed Editor", title)
+        Me.Width = 780
+        Me.Height = 560
 
-        ' Textbox
+        defaultTemplate = defaultTemplate
+        ResultText = initialText
+
+        ' --- Controls ---
         txtEditor = New MaterialMultiLineTextBox() With {
-            .Dock = DockStyle.Top,
-            .Height = 350,
+            .Name = "txtEditor",
             .Text = initialText,
-            .ScrollBars = ScrollBars.Both
+            .Dock = DockStyle.Fill
         }
 
         btnSave = New MaterialButton() With {
-            .Text = "Save",
-            .Dock = DockStyle.Left
+            .Text = "SAVE",
+            .HighEmphasis = True,
+            .AutoSize = False,
+            .Width = 110
         }
         AddHandler btnSave.Click, AddressOf SaveAndClose
 
-        ' Reset button
         btnReset = New MaterialButton() With {
-            .Text = "Reset",
-            .Dock = DockStyle.Right
+            .Text = "RESET TO DEFAULT",
+            .HighEmphasis = True,
+            .AutoSize = False,
+            .Width = 170
         }
         AddHandler btnReset.Click, AddressOf ResetToDefault
 
-        ' Panel to hold buttons
+        btnCancel = New MaterialButton() With {
+            .Text = "CANCEL",
+            .HighEmphasis = True,
+            .AutoSize = False,
+            .Width = 110
+        }
+        AddHandler btnCancel.Click, Sub() Me.DialogResult = DialogResult.Cancel
+
         Dim pnl As New FlowLayoutPanel() With {
             .Dock = DockStyle.Bottom,
-            .Height = 40
+            .Height = 48,
+            .FlowDirection = FlowDirection.RightToLeft,
+            .Padding = New Padding(8, 8, 8, 8)
         }
-        pnl.Controls.AddRange(New Control() {btnSave, btnReset})
+        pnl.Controls.AddRange(New Control() {btnSave, btnCancel, btnReset})
 
         Me.Controls.Add(txtEditor)
         Me.Controls.Add(pnl)
+
+        ' Enter/Esc behavior
+        Me.AcceptButton = btnSave
+        Me.CancelButton = btnCancel
     End Sub
 
     Private Sub SaveAndClose(sender As Object, e As EventArgs)
         ResultText = txtEditor.Text
         Me.DialogResult = DialogResult.OK
         Me.Close()
-    End Sub
-
-    Private Sub InitializeComponent()
-
     End Sub
 
     Private Sub ResetToDefault(sender As Object, e As EventArgs)

@@ -185,6 +185,102 @@ Namespace My
                 Me("QuestEmbedSet") = value
             End Set
         End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("False")>  _
+        Public Property CheckChat() As Boolean
+            Get
+                Return CType(Me("CheckChat"),Boolean)
+            End Get
+            Set
+                Me("CheckChat") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("False")>  _
+        Public Property CheckQuest() As Boolean
+            Get
+                Return CType(Me("CheckQuest"),Boolean)
+            End Get
+            Set
+                Me("CheckQuest") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("False")>  _
+        Public Property TakeScreenshots() As Boolean
+            Get
+                Return CType(Me("TakeScreenshots"),Boolean)
+            End Get
+            Set
+                Me("TakeScreenshots") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("False")>  _
+        Public Property AutoDelete() As Boolean
+            Get
+                Return CType(Me("AutoDelete"),Boolean)
+            End Get
+            Set
+                Me("AutoDelete") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("False")>  _
+        Public Property CheckErrReasons() As Boolean
+            Get
+                Return CType(Me("CheckErrReasons"),Boolean)
+            End Get
+            Set
+                Me("CheckErrReasons") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("False")>  _
+        Public Property CheckSkillsErr() As Boolean
+            Get
+                Return CType(Me("CheckSkillsErr"),Boolean)
+            End Get
+            Set
+                Me("CheckSkillsErr") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("False")>  _
+        Public Property CheckQuestsErr() As Boolean
+            Get
+                Return CType(Me("CheckQuestsErr"),Boolean)
+            End Get
+            Set
+                Me("CheckQuestsErr") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("False")>  _
+        Public Property CheckCombatErr() As Boolean
+            Get
+                Return CType(Me("CheckCombatErr"),Boolean)
+            End Get
+            Set
+                Me("CheckCombatErr") = value
+            End Set
+        End Property
     End Class
 End Namespace
 

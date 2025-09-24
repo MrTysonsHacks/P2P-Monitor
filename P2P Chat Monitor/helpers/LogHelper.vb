@@ -7,6 +7,58 @@ Public Class LogHelper
     Private Shared ReadOnly LogLevels As HashSet(Of String) =
         New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {"INFO", "DEBUG", "WARN", "ERROR", "TRACE", "FATAL"}
 
+    Private Shared ReadOnly SeenLogs As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+
+    Public Shared Sub ResetSeen()
+        SeenLogs.Clear()
+    End Sub
+
+    Public Shared Function GetLatestPerFolder(LOG_DIR As String) As List(Of String)
+        Dim result As New List(Of String)()
+        If String.IsNullOrWhiteSpace(LOG_DIR) Then Return result
+
+        For Each dir As String In LOG_DIR.Split(";"c)
+            Dim folder = dir.Trim()
+            If folder = "" OrElse Not Directory.Exists(folder) Then Continue For
+
+            Dim latestPath As String = Nothing
+            Dim latestStamp As DateTime = DateTime.MinValue
+
+            Try
+                For Each filePath In Directory.GetFiles(folder, "logfile-*.log", SearchOption.TopDirectoryOnly)
+                    Try
+                        Dim stamp As DateTime = File.GetLastWriteTimeUtc(filePath)
+                        If (stamp > latestStamp) OrElse (stamp = latestStamp AndAlso (latestPath Is Nothing OrElse String.CompareOrdinal(filePath, latestPath) > 0)) Then
+                            latestStamp = stamp
+                            latestPath = filePath
+                        End If
+                    Catch
+                    End Try
+                Next
+            Catch
+            End Try
+
+            If Not String.IsNullOrWhiteSpace(latestPath) Then
+                result.Add(latestPath)
+            End If
+        Next
+
+        Return result
+    End Function
+
+    Public Shared Sub AnnounceLatestOnce(paths As IEnumerable(Of String),
+                                     logAction As Action(Of String),
+                                     lastOffsets As Dictionary(Of String, Long),
+                                     lastProcessedTimes As Dictionary(Of String, DateTime?))
+        For Each p In paths
+            If Not SeenLogs.Contains(p) Then
+                logAction("📄 New log file detected: " & Path.GetFileName(p))
+                SeenLogs.Add(p)
+                JumpToEnd(p, lastOffsets, lastProcessedTimes)
+            End If
+        Next
+    End Sub
+
     Public Shared Async Function OnLogChanged(sender As Object, e As FileSystemEventArgs,
                                 monitoring As Boolean,
                                 lastOffsets As Dictionary(Of String, Long),
@@ -50,6 +102,7 @@ Public Class LogHelper
 
             Dim cutoff As DateTime? = If(lastProcessedTimes.ContainsKey(path), lastProcessedTimes(path), Nothing)
             Dim onlyNew = New List(Of String)
+            If Not SeenLogs.Contains(path) Then SeenLogs.Add(path)
             For Each line In newLines
                 Dim ts = ParseLogDate(line)
                 If ts.HasValue AndAlso (cutoff Is Nothing OrElse ts > cutoff) Then
@@ -146,8 +199,9 @@ Public Class LogHelper
             Return
         End If
 
-        If lastFile Is Nothing OrElse latest <> lastFile Then
+        If Not SeenLogs.Contains(latest) Then
             logAction("📄 New log file detected: " & Path.GetFileName(latest))
+            SeenLogs.Add(latest)
             lastFile = latest
             JumpToEnd(latest, lastOffsets, lastProcessedTimes)
         Else
@@ -258,7 +312,6 @@ Public Class LogHelper
             If triggers.Any(Function(rx) rx.IsMatch(currentLine)) Then
                 Dim matchedReason As String = Nothing
 
-                ' Look around nearby lines for a friendly reason
                 Dim startIdx = Math.Max(0, i - 10)
                 Dim endIdx = Math.Min(lines.Count - 1, i + 10)
 
@@ -288,7 +341,6 @@ Public Class LogHelper
         Dim startIdx = Math.Max(0, center - 10)
         Dim endIdx = Math.Min(lines.Count - 1, center + 10)
 
-        ' 1) Prefer: Resource check failed [ ... ]
         For j = endIdx To startIdx Step -1
             Dim m = Regex.Match(lines(j), "Resource check failed\s*\[(.*?)\]", RegexOptions.IgnoreCase)
             If m.Success Then Return m.Groups(1).Value
