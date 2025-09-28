@@ -14,7 +14,6 @@ Public Class EmbedEditor
     Private btnCancel As MaterialButton
 
     Public Sub New(initialText As String, title As String, defaultTemplate As String, darkMode As Boolean)
-        ' Theme hookup
         Dim skinManager = MaterialSkinManager.Instance
         skinManager.AddFormToManage(Me)
 
@@ -24,17 +23,14 @@ Public Class EmbedEditor
             skinManager.Theme = MaterialSkinManager.Themes.LIGHT
         End If
 
-        ' Center this window over the owner
         Me.StartPosition = FormStartPosition.CenterParent
         Me.Sizable = True
         Me.Text = If(String.IsNullOrWhiteSpace(title), "Embed Editor", title)
         Me.Width = 780
         Me.Height = 560
+        Me.DefaultTemplate = If(String.IsNullOrWhiteSpace(defaultTemplate), initialText, defaultTemplate)
+        Me.ResultText = If(String.IsNullOrWhiteSpace(initialText), Me.DefaultTemplate, initialText)
 
-        defaultTemplate = defaultTemplate
-        ResultText = initialText
-
-        ' --- Controls ---
         txtEditor = New MaterialMultiLineTextBox() With {
             .Name = "txtEditor",
             .Text = initialText,
@@ -75,8 +71,6 @@ Public Class EmbedEditor
 
         Me.Controls.Add(txtEditor)
         Me.Controls.Add(pnl)
-
-        ' Enter/Esc behavior
         Me.AcceptButton = btnSave
         Me.CancelButton = btnCancel
     End Sub

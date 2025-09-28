@@ -281,6 +281,54 @@ Namespace My
                 Me("CheckCombatErr") = value
             End Set
         End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("")>  _
+        Public Property TaskEmbedSet() As String
+            Get
+                Return CType(Me("TaskEmbedSet"),String)
+            End Get
+            Set
+                Me("TaskEmbedSet") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("False")>  _
+        Public Property CheckTask() As Boolean
+            Get
+                Return CType(Me("CheckTask"),Boolean)
+            End Get
+            Set
+                Me("CheckTask") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("False")>  _
+        Public Property BotSelfie() As Boolean
+            Get
+                Return CType(Me("BotSelfie"),Boolean)
+            End Get
+            Set
+                Me("BotSelfie") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("0")>  _
+        Public Property BotSelfieInterval() As Integer
+            Get
+                Return CType(Me("BotSelfieInterval"),Integer)
+            End Get
+            Set
+                Me("BotSelfieInterval") = value
+            End Set
+        End Property
     End Class
 End Namespace
 

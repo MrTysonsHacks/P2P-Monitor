@@ -153,18 +153,53 @@ Public Class DiscordHelpers
     }
   ]
 }"
+    Public Shared ReadOnly defaultTaskTemplate As String =
+    "{
+  ""content"": """",
+  ""tts"": false,
+  ""embeds"": [
+    {
+      ""title"": ""P2P AI Task Update"",
+      ""description"": ""<@{mention}> - Detected P2P AI Task Update\n\nLog: **{filename}**\nAccount: **{folder}**\n\n"",
+      ""fields"": [
+        {
+          ""name"": ""Task"",
+          ""value"": ""{task}"",
+          ""inline"": false
+        },
+        {
+          ""name"": ""Activity:"",
+          ""value"": ""{activity}""
+        }
+      ],
+      ""footer"": {
+        ""text"": ""P2P Monitor Detection system - {time}""
+      },
+      ""image"": {
+        ""url"": ""attachment://{screenshot}""
+      },
+      ""color"": 16775424
+    }
+  ]
+}"
 
     Public Shared Function BuildErrorPayload(template As String, mention As String, failureType As String,
                                       trigger As String, reason As String, filename As String,
-                                      folder As String, timestamp As String) As String
+                                      folder As String, timestamp As DateTime) As String
+
+        Dim time12h As String = timestamp.ToString("hh:mm:ss tt")
+        Dim time24h As String = timestamp.ToString("HH:mm:ss")
+
         Return template _
-            .Replace("{mention}", JsonSafe(mention)) _
-            .Replace("{type}", JsonSafe(failureType)) _
-            .Replace("{trigger}", JsonSafe(trigger)) _
-            .Replace("{reason}", JsonSafe(reason)) _
-            .Replace("{filename}", JsonSafe(filename)) _
-            .Replace("{folder}", JsonSafe(folder)) _
-            .Replace("{time}", timestamp)
+        .Replace("{mention}", JsonSafe(mention)) _
+        .Replace("{type}", JsonSafe(failureType)) _
+        .Replace("{trigger}", JsonSafe(trigger)) _
+        .Replace("{reason}", JsonSafe(reason)) _
+        .Replace("{filename}", JsonSafe(filename)) _
+        .Replace("{folder}", JsonSafe(folder)) _
+        .Replace("{12h}", time12h) _
+        .Replace("{24h}", time24h) _
+        .Replace("{time}", time24h)
     End Function
 
     Public Shared Function BuildChatPayload(template As String,
@@ -174,8 +209,12 @@ Public Class DiscordHelpers
                                         screenshotRef As String,
                                         filename As String,
                                         folder As String,
-                                        timestamp As String,
+                                        timestamp As DateTime,
                                         index As Integer) As String
+
+        Dim time12h As String = timestamp.ToString("hh:mm:ss tt")
+        Dim time24h As String = timestamp.ToString("HH:mm:ss")
+
         Dim payload = template _
         .Replace("{mention}", mention) _
         .Replace("{chat}", chat) _
@@ -183,7 +222,9 @@ Public Class DiscordHelpers
         .Replace("{screenshot}", screenshotRef) _
         .Replace("{filename}", filename) _
         .Replace("{folder}", folder) _
-        .Replace("{time}", timestamp) _
+        .Replace("{12h}", time12h) _
+        .Replace("{24h}", time24h) _
+        .Replace("{time}", time24h) _
         .Replace("{index}", index.ToString())
 
         If String.IsNullOrWhiteSpace(screenshotRef) Then
@@ -194,23 +235,28 @@ Public Class DiscordHelpers
         Return payload
     End Function
 
-
     Public Shared Function BuildQuestPayload(template As String,
-                                             mention As String,
-                                             segment As String,
-                                             screenshotRef As String,
-                                             filename As String,
-                                             folder As String,
-                                             timestamp As String,
-                                             index As Integer) As String
+                                         mention As String,
+                                         segment As String,
+                                         screenshotRef As String,
+                                         filename As String,
+                                         folder As String,
+                                         timestamp As DateTime,
+                                         index As Integer) As String
+
+        Dim time12h As String = timestamp.ToString("hh:mm:ss tt")
+        Dim time24h As String = timestamp.ToString("HH:mm:ss")
+
         Dim payload = template _
-            .Replace("{mention}", JsonSafe(mention)) _
-            .Replace("{segment}", JsonSafe(segment)) _
-            .Replace("{screenshot}", screenshotRef) _
-            .Replace("{filename}", JsonSafe(filename)) _
-            .Replace("{folder}", JsonSafe(folder)) _
-            .Replace("{time}", timestamp) _
-            .Replace("{index}", index.ToString())
+        .Replace("{mention}", JsonSafe(mention)) _
+        .Replace("{segment}", JsonSafe(segment)) _
+        .Replace("{screenshot}", screenshotRef) _
+        .Replace("{filename}", JsonSafe(filename)) _
+        .Replace("{folder}", JsonSafe(folder)) _
+        .Replace("{12h}", time12h) _
+        .Replace("{24h}", time24h) _
+        .Replace("{time}", time24h) _
+        .Replace("{index}", index.ToString())
 
         If String.IsNullOrWhiteSpace(screenshotRef) Then
             payload = payload.Replace("""image"": {""url"": ""attachment://""},", "")
@@ -219,4 +265,37 @@ Public Class DiscordHelpers
 
         Return payload
     End Function
+    Public Shared Function BuildTaskPayload(template As String,
+                                        mention As String,
+                                        task As String,
+                                        activity As String,
+                                        screenshotRef As String,
+                                        filename As String,
+                                        folder As String,
+                                        timestamp As DateTime,
+                                        index As Integer) As String
+
+        Dim time12h As String = timestamp.ToString("hh:mm:ss tt")
+        Dim time24h As String = timestamp.ToString("HH:mm:ss")
+
+        Dim payload = template _
+        .Replace("{mention}", JsonSafe(mention)) _
+        .Replace("{task}", JsonSafe(task)) _
+        .Replace("{activity}", JsonSafe(activity)) _
+        .Replace("{screenshot}", screenshotRef) _
+        .Replace("{filename}", JsonSafe(filename)) _
+        .Replace("{folder}", JsonSafe(folder)) _
+        .Replace("{12h}", time12h) _
+        .Replace("{24h}", time24h) _
+        .Replace("{time}", time24h) _
+        .Replace("{index}", index.ToString())
+
+        If String.IsNullOrWhiteSpace(screenshotRef) Then
+            payload = payload.Replace("""image"": {""url"": ""attachment://""},", "")
+            payload = payload.Replace("""image"": {""url"": ""attachment://""}", "")
+        End If
+
+        Return payload
+    End Function
+
 End Class

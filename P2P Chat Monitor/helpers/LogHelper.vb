@@ -47,9 +47,9 @@ Public Class LogHelper
     End Function
 
     Public Shared Sub AnnounceLatestOnce(paths As IEnumerable(Of String),
-                                     logAction As Action(Of String),
-                                     lastOffsets As Dictionary(Of String, Long),
-                                     lastProcessedTimes As Dictionary(Of String, DateTime?))
+                                         logAction As Action(Of String),
+                                         lastOffsets As Dictionary(Of String, Long),
+                                         lastProcessedTimes As Dictionary(Of String, DateTime?))
         For Each p In paths
             If Not SeenLogs.Contains(p) Then
                 logAction("📄 New log file detected: " & Path.GetFileName(p))
@@ -60,25 +60,25 @@ Public Class LogHelper
     End Sub
 
     Public Shared Async Function OnLogChanged(sender As Object, e As FileSystemEventArgs,
-                                monitoring As Boolean,
-                                lastOffsets As Dictionary(Of String, Long),
-                                lastProcessedTimes As Dictionary(Of String, DateTime?),
-                                monitorChat As Boolean,
-                                monitorQuests As Boolean,
-                                takeScreenshots As Boolean,
-                                questError As Boolean,
-                                skillIssue As Boolean,
-                                combatError As Boolean,
-                                questFailureTriggers As List(Of Regex),
-                                questFailureReasons As List(Of KeyValuePair(Of Regex, String)),
-                                skillFailureTriggers As List(Of Regex),
-                                skillFailureReasons As List(Of KeyValuePair(Of Regex, String)),
-                                combatFailureTriggers As List(Of Regex),
-                                combatFailureReasons As List(Of KeyValuePair(Of Regex, String)),
-                                AppendLog As Action(Of String),
-                                SendSegments As Func(Of List(Of List(Of String)), String, String, Integer, Task),
-                                PostFailAlert As Func(Of String, String, String, String, Task),
-                                GetFolderName As Func(Of String, String)) As Task(Of Boolean)
+                                             monitoring As Boolean,
+                                             lastOffsets As Dictionary(Of String, Long),
+                                             lastProcessedTimes As Dictionary(Of String, DateTime?),
+                                             monitorChat As Boolean,
+                                             monitorQuests As Boolean,
+                                             takeScreenshots As Boolean, monitorTask As Boolean,
+                                             questError As Boolean,
+                                             skillIssue As Boolean,
+                                             combatError As Boolean,
+                                             questFailureTriggers As List(Of Regex),
+                                             questFailureReasons As List(Of KeyValuePair(Of Regex, String)),
+                                             skillFailureTriggers As List(Of Regex),
+                                             skillFailureReasons As List(Of KeyValuePair(Of Regex, String)),
+                                             combatFailureTriggers As List(Of Regex),
+                                             combatFailureReasons As List(Of KeyValuePair(Of Regex, String)),
+                                             AppendLog As Action(Of String),
+                                             SendSegments As Func(Of List(Of List(Of String)), String, String, Integer, Task),
+                                             PostFailAlert As Func(Of String, String, String, String, Task),
+                                             GetFolderName As Func(Of String, String)) As Task(Of Boolean)
 
         If Not monitoring Then Return False
         Try
@@ -101,8 +101,9 @@ Public Class LogHelper
             If newLines.Count = 0 Then Return False
 
             Dim cutoff As DateTime? = If(lastProcessedTimes.ContainsKey(path), lastProcessedTimes(path), Nothing)
-            Dim onlyNew = New List(Of String)
+            Dim onlyNew As New List(Of String)
             If Not SeenLogs.Contains(path) Then SeenLogs.Add(path)
+
             For Each line In newLines
                 Dim ts = ParseLogDate(line)
                 If ts.HasValue AndAlso (cutoff Is Nothing OrElse ts > cutoff) Then
@@ -114,12 +115,11 @@ Public Class LogHelper
             If monitorChat Then
                 Dim chatSegments = SliceChatSegments(onlyNew)
                 If chatSegments.Count > 0 Then
-                    AppendLog($"📨 Found {chatSegments.Count} chat event(s)")
-
+                    Dim screenshotPath As String = Nothing
                     If takeScreenshots Then
                         Dim folderName As String = GetFolderName(path)
                         Dim logRoot As String = System.IO.Path.GetDirectoryName(path)
-                        Dim screenshotPath As String = ScreenshotHelpers.SnapAndSend(path, folderName, logRoot)
+                        screenshotPath = ScreenshotHelpers.SnapAndSend(path, folderName, logRoot, AppendLog)
                         If Not String.IsNullOrWhiteSpace(screenshotPath) Then
                             AppendLog("📸 Screenshot captured.")
                         Else
@@ -127,6 +127,7 @@ Public Class LogHelper
                         End If
                     End If
 
+                    AppendLog($"📨 Found {chatSegments.Count} chat event(s)")
                     Await SendSegments(chatSegments, path, "P2P Chat Event", &H7289DA)
                 End If
             End If
@@ -134,18 +135,53 @@ Public Class LogHelper
             If monitorQuests Then
                 Dim questSegments = SliceQuests(onlyNew)
                 If questSegments.Count > 0 Then
+                    Dim screenshotPath As String = Nothing
+                    If takeScreenshots Then
+                        Dim folderName As String = GetFolderName(path)
+                        Dim logRoot As String = System.IO.Path.GetDirectoryName(path)
+                        screenshotPath = ScreenshotHelpers.SnapAndSend(path, folderName, logRoot, AppendLog)
+                        If Not String.IsNullOrWhiteSpace(screenshotPath) Then
+                            AppendLog("📸 Screenshot captured.")
+                        Else
+                            AppendLog("⚠ DreamBot window not found or failed to capture screenshot.")
+                        End If
+                    End If
+
                     AppendLog($"🏆 Found {questSegments.Count} quest(s)")
                     Await SendSegments(questSegments, path, "Quest Event", &HFFD700)
                 End If
             End If
 
+            If monitorTask Then
+                Dim taskPairs = SliceTasks(onlyNew)
+                If taskPairs.Count > 0 Then
+                    Dim taskSegments As New List(Of List(Of String))()
+                    For Each pair In taskPairs
+                        taskSegments.Add(New List(Of String)(pair))
+                    Next
+                    Dim screenshotPath As String = ""
+                    If takeScreenshots Then
+                        Dim folderName As String = GetFolderName(path)
+                        Dim logRoot As String = System.IO.Path.GetDirectoryName(path)
+                        screenshotPath = ScreenshotHelpers.SnapAndSend(path, folderName, logRoot, AppendLog)
+                        If Not String.IsNullOrWhiteSpace(screenshotPath) Then
+                            AppendLog("📸 Screenshot captured.")
+                        Else
+                            AppendLog("⚠ DreamBot window not found or failed to capture screenshot.")
+                        End If
+                    End If
+
+                    AppendLog($"📝 Found {taskSegments.Count} task(s)")
+                    Await SendSegments(taskSegments, path, "Task Event", &H57F287)
+                End If
+            End If
+
+
             If questError Then
                 Dim questFailures = ScanFailures(onlyNew, questFailureTriggers, questFailureReasons, "Quest")
                 For Each failure In questFailures
                     Dim reasonOut = failure.Reason
-                    If Not String.IsNullOrWhiteSpace(failure.Extra) Then
-                        reasonOut &= $" ({failure.Extra})"
-                    End If
+                    If Not String.IsNullOrWhiteSpace(failure.Extra) Then reasonOut &= $" ({failure.Extra})"
                     AppendLog($"❌ Quest Failure detected: {failure.Trigger} / {reasonOut}")
                     Await PostFailAlert(failure.Trigger, reasonOut, path, "Quest")
                 Next
@@ -155,9 +191,7 @@ Public Class LogHelper
                 Dim skillFailures = ScanFailures(onlyNew, skillFailureTriggers, skillFailureReasons, "Skill")
                 For Each failure In skillFailures
                     Dim reasonOut = failure.Reason
-                    If Not String.IsNullOrWhiteSpace(failure.Extra) Then
-                        reasonOut &= $" ({failure.Extra})"
-                    End If
+                    If Not String.IsNullOrWhiteSpace(failure.Extra) Then reasonOut &= $" ({failure.Extra})"
                     AppendLog($"❌ Skill Failure detected: {failure.Trigger} / {reasonOut}")
                     Await PostFailAlert(failure.Trigger, reasonOut, path, "Skill")
                 Next
@@ -167,9 +201,7 @@ Public Class LogHelper
                 Dim combatFailures = ScanFailures(onlyNew, combatFailureTriggers, combatFailureReasons, "Combat")
                 For Each failure In combatFailures
                     Dim reasonOut = failure.Reason
-                    If Not String.IsNullOrWhiteSpace(failure.Extra) Then
-                        reasonOut &= $" ({failure.Extra})"
-                    End If
+                    If Not String.IsNullOrWhiteSpace(failure.Extra) Then reasonOut &= $" ({failure.Extra})"
                     AppendLog($"❌ Combat Failure detected: {failure.Trigger} / {reasonOut}")
                     Await PostFailAlert(failure.Trigger, reasonOut, path, "Combat")
                 Next
@@ -189,9 +221,9 @@ Public Class LogHelper
     End Function
 
     Public Shared Sub HeartbeatTick(state As Object, logAction As Action(Of String), ByRef lastFile As String,
-                                checkInterval As Integer, LOG_DIR As String,
-                                lastOffsets As Dictionary(Of String, Long),
-                                lastProcessedTimes As Dictionary(Of String, DateTime?))
+                                    checkInterval As Integer, LOG_DIR As String,
+                                    lastOffsets As Dictionary(Of String, Long),
+                                    lastProcessedTimes As Dictionary(Of String, DateTime?))
 
         Dim latest = GetLatestLogFile(LOG_DIR)
         If String.IsNullOrWhiteSpace(latest) Then
@@ -276,7 +308,7 @@ Public Class LogHelper
         Dim segments As New List(Of List(Of String))()
         Dim current As New List(Of String)()
         For Each line In lines
-            Dim upper = line.ToUpper()
+            Dim upper = line.ToUpperInvariant()
             If upper.Contains("CHAT") AndAlso current.Count = 0 Then
                 current.Add(line)
             ElseIf (upper.Contains("SLOWLY TYPING RESPONSE") OrElse upper.Contains("BAD RESPONSE")) AndAlso current.Count > 0 Then
@@ -300,6 +332,7 @@ Public Class LogHelper
         Next
         Return quests
     End Function
+
     Public Shared Function ScanFailures(lines As List(Of String),
                                         triggers As List(Of Regex),
                                         reasons As List(Of KeyValuePair(Of Regex, String)),
@@ -337,6 +370,87 @@ Public Class LogHelper
 
         Return results
     End Function
+    Public Shared Function SliceTasks(lines As IEnumerable(Of String)) As List(Of List(Of String))
+        Dim result As New List(Of List(Of String))()
+        Dim arr As List(Of String) = lines.ToList()
+
+        For i As Integer = 0 To arr.Count - 1
+            If arr(i).IndexOf("NEW TASK", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                Dim maxJ As Integer = Math.Min(arr.Count - 1, i + 35)
+
+                Dim normalTask As String = Nothing
+                Dim actualTask As String = Nothing
+
+                Dim genericActivity As String = Nothing
+                Dim slayerArrow As String = Nothing
+                Dim slayerIdLine As String = Nothing
+
+                'collect everything we might need
+                For j As Integer = i + 1 To maxJ
+                    Dim line As String = arr(j)
+
+                    If line.IndexOf("Actually task is", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                        Dim idx = line.IndexOf("Actually task is", StringComparison.OrdinalIgnoreCase)
+                        actualTask = line.Substring(idx + "Actually task is".Length).Trim().Trim(":"c, " "c, "-"c)
+                    ElseIf line.IndexOf("Task is", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                        If normalTask Is Nothing Then
+                            Dim idx = line.IndexOf("Task is", StringComparison.OrdinalIgnoreCase)
+                            normalTask = line.Substring(idx + "Task is".Length).Trim().Trim(":"c, " "c, "-"c)
+                        End If
+                    End If
+
+                    If line.IndexOf("Slayer ->", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                        Dim idx = line.IndexOf("Slayer ->", StringComparison.OrdinalIgnoreCase)
+                        slayerArrow = line.Substring(idx + "Slayer ->".Length).Trim()
+                    ElseIf line.IndexOf("Task id", StringComparison.OrdinalIgnoreCase) >= 0 AndAlso
+                       line.IndexOf("qty", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                        slayerIdLine = line.Trim()
+                    End If
+
+                    If genericActivity Is Nothing AndAlso line.IndexOf("Activity is", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                        Dim idx = line.IndexOf("Activity is", StringComparison.OrdinalIgnoreCase)
+                        genericActivity = line.Substring(idx + "Activity is".Length).Trim().Trim(":"c, " "c, "-"c)
+                    End If
+                Next
+
+                Dim finalTask As String = If(actualTask, normalTask)
+                Dim finalActivity As String = Nothing
+
+                If Not String.IsNullOrEmpty(finalTask) AndAlso finalTask.StartsWith("Slayer", StringComparison.OrdinalIgnoreCase) Then
+                    If Not String.IsNullOrEmpty(slayerArrow) Then
+                        finalActivity = slayerArrow
+                    ElseIf Not String.IsNullOrEmpty(slayerIdLine) Then
+                        Dim m As System.Text.RegularExpressions.Match =
+                        System.Text.RegularExpressions.Regex.Match(slayerIdLine, "(?i)\bqty\s+(\d+)\b")
+                        If m.Success AndAlso Integer.TryParse(m.Groups(1).Value, Nothing) AndAlso CInt(m.Groups(1).Value) = 0 Then
+                            finalActivity = "Getting new slayer task"
+                        Else
+                            finalActivity = slayerIdLine
+                        End If
+                    Else
+                        finalActivity = Nothing
+                    End If
+                Else
+                    finalActivity = genericActivity
+                End If
+
+                If Not String.IsNullOrWhiteSpace(finalTask) OrElse Not String.IsNullOrWhiteSpace(finalActivity) Then
+                    result.Add(New List(Of String) From {
+                    If(finalTask, String.Empty),
+                    If(finalActivity, String.Empty)
+                })
+                End If
+            End If
+        Next
+
+        Return result
+    End Function
+
+
+
+
+
+
     Private Shared Function ExtractExtraFromContext(lines As List(Of String), center As Integer) As String
         Dim startIdx = Math.Max(0, center - 10)
         Dim endIdx = Math.Min(lines.Count - 1, center + 10)
@@ -345,6 +459,7 @@ Public Class LogHelper
             Dim m = Regex.Match(lines(j), "Resource check failed\s*\[(.*?)\]", RegexOptions.IgnoreCase)
             If m.Success Then Return m.Groups(1).Value
         Next
+
         For j = endIdx To startIdx Step -1
             Dim ms = Regex.Matches(lines(j), "\[(.*?)\]")
             For k = ms.Count - 1 To 0 Step -1
@@ -357,5 +472,4 @@ Public Class LogHelper
 
         Return ""
     End Function
-
 End Class
