@@ -1,6 +1,55 @@
 ﻿Imports MaterialSkin
 Imports MaterialSkin.Controls
 Imports System.Text
+Public Class EmbedSelector
+    Inherits MaterialForm
+
+    Public Sub New()
+        Dim skinManager = MaterialSkinManager.Instance
+        skinManager.AddFormToManage(Me)
+        skinManager.Theme = MaterialSkinManager.Themes.DARK
+
+        Me.StartPosition = FormStartPosition.CenterParent
+        Me.Text = "Select Embed to Edit"
+        Me.Width = 225
+        Me.Height = 325
+
+        Dim pnl As New FlowLayoutPanel() With {
+            .Dock = DockStyle.Fill,
+            .FlowDirection = FlowDirection.TopDown,
+            .Padding = New Padding(20),
+            .AutoScroll = True
+        }
+
+        Dim btnTask As New MaterialButton() With {.Text = "Edit Task Embed", .AutoSize = True}
+        AddHandler btnTask.Click, Sub() OpenEditor("TaskEmbed", My.Settings.TaskEmbedSet)
+
+        Dim btnChat As New MaterialButton() With {.Text = "Edit Chat Embed", .AutoSize = True}
+        AddHandler btnChat.Click, Sub() OpenEditor("ChatEmbed", My.Settings.ChatEmbedSet)
+
+        Dim btnQuest As New MaterialButton() With {.Text = "Edit Quest Embed", .AutoSize = True}
+        AddHandler btnQuest.Click, Sub() OpenEditor("QuestEmbed", My.Settings.QuestEmbedSet)
+
+        Dim btnFailure As New MaterialButton() With {.Text = "Edit Error Embed", .AutoSize = True}
+        AddHandler btnFailure.Click, Sub() OpenEditor("ErrorEmbed", My.Settings.ErrorEmbedSet)
+
+        pnl.Controls.AddRange(New Control() {btnTask, btnChat, btnQuest, btnFailure})
+        Me.Controls.Add(pnl)
+    End Sub
+
+    Private Sub OpenEditor(title As String, currentText As String)
+        Dim editor As New EmbedEditor(currentText, $"Edit {title}", currentText, True)
+        If editor.ShowDialog(Me) = DialogResult.OK Then
+            Select Case title
+                Case "TaskEmbed" : My.Settings.TaskEmbedSet = editor.ResultText
+                Case "ChatEmbed" : My.Settings.ChatEmbedSet = editor.ResultText
+                Case "QuestEmbed" : My.Settings.QuestEmbedSet = editor.ResultText
+                Case "FailureEmbed" : My.Settings.ErrorEmbedSet = editor.ResultText
+            End Select
+            My.Settings.Save()
+        End If
+    End Sub
+End Class
 
 Public Class EmbedEditor
     Inherits MaterialForm

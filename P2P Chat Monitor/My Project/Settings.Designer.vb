@@ -329,6 +329,42 @@ Namespace My
                 Me("BotSelfieInterval") = value
             End Set
         End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("")>  _
+        Public Property TaskID() As String
+            Get
+                Return CType(Me("TaskID"),String)
+            End Get
+            Set
+                Me("TaskID") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("")>  _
+        Public Property SelfieID() As String
+            Get
+                Return CType(Me("SelfieID"),String)
+            End Get
+            Set
+                Me("SelfieID") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("False")>  _
+        Public Property BlurStats() As Boolean
+            Get
+                Return CType(Me("BlurStats"),Boolean)
+            End Get
+            Set
+                Me("BlurStats") = value
+            End Set
+        End Property
     End Class
 End Namespace
 

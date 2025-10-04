@@ -60,25 +60,25 @@ Public Class LogHelper
     End Sub
 
     Public Shared Async Function OnLogChanged(sender As Object, e As FileSystemEventArgs,
-                                             monitoring As Boolean,
-                                             lastOffsets As Dictionary(Of String, Long),
-                                             lastProcessedTimes As Dictionary(Of String, DateTime?),
-                                             monitorChat As Boolean,
-                                             monitorQuests As Boolean,
-                                             takeScreenshots As Boolean, monitorTask As Boolean,
-                                             questError As Boolean,
-                                             skillIssue As Boolean,
-                                             combatError As Boolean,
-                                             questFailureTriggers As List(Of Regex),
-                                             questFailureReasons As List(Of KeyValuePair(Of Regex, String)),
-                                             skillFailureTriggers As List(Of Regex),
-                                             skillFailureReasons As List(Of KeyValuePair(Of Regex, String)),
-                                             combatFailureTriggers As List(Of Regex),
-                                             combatFailureReasons As List(Of KeyValuePair(Of Regex, String)),
-                                             AppendLog As Action(Of String),
-                                             SendSegments As Func(Of List(Of List(Of String)), String, String, Integer, Task),
-                                             PostFailAlert As Func(Of String, String, String, String, Task),
-                                             GetFolderName As Func(Of String, String)) As Task(Of Boolean)
+                                         monitoring As Boolean,
+                                         lastOffsets As Dictionary(Of String, Long),
+                                         lastProcessedTimes As Dictionary(Of String, DateTime?),
+                                         monitorChat As Boolean,
+                                         monitorQuests As Boolean,
+                                         takeScreenshots As Boolean, monitorTask As Boolean,
+                                         questError As Boolean,
+                                         skillIssue As Boolean,
+                                         combatError As Boolean,
+                                         questFailureTriggers As List(Of Regex),
+                                         questFailureReasons As List(Of KeyValuePair(Of Regex, String)),
+                                         skillFailureTriggers As List(Of Regex),
+                                         skillFailureReasons As List(Of KeyValuePair(Of Regex, String)),
+                                         combatFailureTriggers As List(Of Regex),
+                                         combatFailureReasons As List(Of KeyValuePair(Of Regex, String)),
+                                         AppendLog As Action(Of String),
+                                         SendSegments As Func(Of List(Of List(Of String)), String, String, Integer, Task),
+                                         PostFailAlert As Func(Of String, String, String, String, Task),
+                                         GetFolderName As Func(Of String, String)) As Task(Of Boolean)
 
         If Not monitoring Then Return False
         Try
@@ -112,12 +112,23 @@ Public Class LogHelper
             Next
             If onlyNew.Count = 0 Then Return False
 
+            Dim folderName As String = GetFolderName(path)
+
+            For Each line In onlyNew
+                If line.IndexOf("BREAK START", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    main.accountBreakStates(folderName) = True
+                    AppendLog($"⏸ {folderName} is now on break. Selfies paused.")
+                ElseIf line.IndexOf("Break over", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    main.accountBreakStates(folderName) = False
+                    AppendLog($"▶ {folderName} break ended. Selfies resumed.")
+                End If
+            Next
+
             If monitorChat Then
                 Dim chatSegments = SliceChatSegments(onlyNew)
                 If chatSegments.Count > 0 Then
                     Dim screenshotPath As String = Nothing
                     If takeScreenshots Then
-                        Dim folderName As String = GetFolderName(path)
                         Dim logRoot As String = System.IO.Path.GetDirectoryName(path)
                         screenshotPath = ScreenshotHelpers.SnapAndSend(path, folderName, logRoot, AppendLog)
                         If Not String.IsNullOrWhiteSpace(screenshotPath) Then
@@ -137,7 +148,6 @@ Public Class LogHelper
                 If questSegments.Count > 0 Then
                     Dim screenshotPath As String = Nothing
                     If takeScreenshots Then
-                        Dim folderName As String = GetFolderName(path)
                         Dim logRoot As String = System.IO.Path.GetDirectoryName(path)
                         screenshotPath = ScreenshotHelpers.SnapAndSend(path, folderName, logRoot, AppendLog)
                         If Not String.IsNullOrWhiteSpace(screenshotPath) Then
@@ -161,7 +171,6 @@ Public Class LogHelper
                     Next
                     Dim screenshotPath As String = ""
                     If takeScreenshots Then
-                        Dim folderName As String = GetFolderName(path)
                         Dim logRoot As String = System.IO.Path.GetDirectoryName(path)
                         screenshotPath = ScreenshotHelpers.SnapAndSend(path, folderName, logRoot, AppendLog)
                         If Not String.IsNullOrWhiteSpace(screenshotPath) Then
@@ -175,7 +184,6 @@ Public Class LogHelper
                     Await SendSegments(taskSegments, path, "Task Event", &H57F287)
                 End If
             End If
-
 
             If questError Then
                 Dim questFailures = ScanFailures(onlyNew, questFailureTriggers, questFailureReasons, "Quest")
@@ -208,10 +216,10 @@ Public Class LogHelper
             End If
 
             Dim maxTs = onlyNew.Select(Function(line) ParseLogDate(line)).
-                                Where(Function(ts) ts.HasValue).
-                                Select(Function(ts) ts.Value).
-                                DefaultIfEmpty(DateTime.MinValue).
-                                Max()
+                            Where(Function(ts) ts.HasValue).
+                            Select(Function(ts) ts.Value).
+                            DefaultIfEmpty(DateTime.MinValue).
+                            Max()
             If maxTs <> DateTime.MinValue Then lastProcessedTimes(path) = maxTs
 
         Catch ex As Exception
@@ -334,9 +342,9 @@ Public Class LogHelper
     End Function
 
     Public Shared Function ScanFailures(lines As List(Of String),
-                                        triggers As List(Of Regex),
-                                        reasons As List(Of KeyValuePair(Of Regex, String)),
-                                        failureType As String) As List(Of (Trigger As String, Reason As String, Extra As String))
+                                    triggers As List(Of Regex),
+                                    reasons As List(Of KeyValuePair(Of Regex, String)),
+                                    failureType As String) As List(Of (Trigger As String, Reason As String, Extra As String))
 
         Dim results As New List(Of (Trigger As String, Reason As String, Extra As String))
 
@@ -344,6 +352,11 @@ Public Class LogHelper
             Dim currentLine = lines(i)
             If triggers.Any(Function(rx) rx.IsMatch(currentLine)) Then
                 Dim matchedReason As String = Nothing
+
+                Dim cleanedTrigger As String = Regex.Replace(currentLine,
+                                                         "^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\[[A-Z]+\]\s*>?\s*",
+                                                         "",
+                                                         RegexOptions.IgnoreCase).Trim()
 
                 Dim startIdx = Math.Max(0, i - 10)
                 Dim endIdx = Math.Min(lines.Count - 1, i + 10)
@@ -364,91 +377,132 @@ Public Class LogHelper
 
                 Dim extra As String = ExtractExtraFromContext(lines, i)
 
-                results.Add((currentLine, matchedReason, extra))
+                results.Add((cleanedTrigger, matchedReason, extra))
             End If
         Next
-
         Return results
     End Function
+
     Public Shared Function SliceTasks(lines As IEnumerable(Of String)) As List(Of List(Of String))
         Dim result As New List(Of List(Of String))()
         Dim arr As List(Of String) = lines.ToList()
 
         For i As Integer = 0 To arr.Count - 1
-            If arr(i).IndexOf("NEW TASK", StringComparison.OrdinalIgnoreCase) >= 0 Then
+            Dim line As String = arr(i)
+
+            If line.IndexOf("Task is doable with this style", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
+           line.IndexOf("Task is NOT doable with this style", StringComparison.OrdinalIgnoreCase) >= 0 Then
+
+                Dim taskName As String = "Slayer"
+                Dim activity As String = ""
+
+                Dim startIdx As Integer = Math.Max(0, i - 25)
+                Dim endIdx As Integer = Math.Min(arr.Count - 1, i + 25)
+
+                For j As Integer = startIdx To endIdx
+                    If arr(j).IndexOf("Slayer ->", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                        activity = Regex.Replace(arr(j), ".*Slayer\s*->\s*", "", RegexOptions.IgnoreCase).Trim()
+                        Exit For
+                    End If
+                Next
+
+                result.Add(New List(Of String) From {taskName, activity})
+                Continue For
+            End If
+
+            If line.IndexOf("BREAK START", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                Dim taskName As String = "Break"
+                Dim activity As String = ""
+
+                Dim startIdx As Integer = Math.Max(0, i - 25)
+                Dim endIdx As Integer = Math.Min(arr.Count - 1, i + 25)
+
+                For j As Integer = startIdx To endIdx
+                    If arr(j).IndexOf("Break length", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                        Dim parts = arr(j).Split(" "c)
+                        Dim msStr As String = parts(parts.Length - 1)
+                        Dim ms As Long
+                        If Long.TryParse(msStr, ms) Then
+                            Dim ts As TimeSpan = TimeSpan.FromMilliseconds(ms)
+
+                            Dim sb As New System.Text.StringBuilder("Length: ")
+                            If ts.Hours > 0 Then sb.Append($"{ts.Hours}h ")
+                            If ts.Minutes > 0 OrElse ts.Hours > 0 Then sb.Append($"{ts.Minutes}m ")
+                            sb.Append($"{ts.Seconds}s")
+
+                            activity = sb.ToString().Trim()
+                        End If
+                        Exit For
+                    End If
+                Next
+
+                result.Add(New List(Of String) From {taskName, activity})
+                Continue For
+            End If
+
+            If line.IndexOf("NEW TASK", StringComparison.OrdinalIgnoreCase) >= 0 Then
                 Dim maxJ As Integer = Math.Min(arr.Count - 1, i + 35)
 
                 Dim normalTask As String = Nothing
                 Dim actualTask As String = Nothing
-
                 Dim genericActivity As String = Nothing
                 Dim slayerArrow As String = Nothing
-                Dim slayerIdLine As String = Nothing
 
-                'collect everything we might need
                 For j As Integer = i + 1 To maxJ
-                    Dim line As String = arr(j)
+                    Dim inner As String = arr(j)
 
-                    If line.IndexOf("Actually task is", StringComparison.OrdinalIgnoreCase) >= 0 Then
-                        Dim idx = line.IndexOf("Actually task is", StringComparison.OrdinalIgnoreCase)
-                        actualTask = line.Substring(idx + "Actually task is".Length).Trim().Trim(":"c, " "c, "-"c)
-                    ElseIf line.IndexOf("Task is", StringComparison.OrdinalIgnoreCase) >= 0 Then
-                        If normalTask Is Nothing Then
-                            Dim idx = line.IndexOf("Task is", StringComparison.OrdinalIgnoreCase)
-                            normalTask = line.Substring(idx + "Task is".Length).Trim().Trim(":"c, " "c, "-"c)
-                        End If
-                    End If
-
-                    If line.IndexOf("Slayer ->", StringComparison.OrdinalIgnoreCase) >= 0 Then
-                        Dim idx = line.IndexOf("Slayer ->", StringComparison.OrdinalIgnoreCase)
-                        slayerArrow = line.Substring(idx + "Slayer ->".Length).Trim()
-                    ElseIf line.IndexOf("Task id", StringComparison.OrdinalIgnoreCase) >= 0 AndAlso
-                       line.IndexOf("qty", StringComparison.OrdinalIgnoreCase) >= 0 Then
-                        slayerIdLine = line.Trim()
-                    End If
-
-                    If genericActivity Is Nothing AndAlso line.IndexOf("Activity is", StringComparison.OrdinalIgnoreCase) >= 0 Then
-                        Dim idx = line.IndexOf("Activity is", StringComparison.OrdinalIgnoreCase)
-                        genericActivity = line.Substring(idx + "Activity is".Length).Trim().Trim(":"c, " "c, "-"c)
+                    If inner.IndexOf("Actually task is", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                        actualTask = inner
+                    ElseIf inner.IndexOf("Task is", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                        normalTask = inner
+                    ElseIf inner.IndexOf("Activity is", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                        genericActivity = inner
+                    ElseIf inner.IndexOf("Slayer ->", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                        slayerArrow = inner
                     End If
                 Next
 
-                Dim finalTask As String = If(actualTask, normalTask)
-                Dim finalActivity As String = Nothing
+                Dim taskName As String = ""
+                If Not String.IsNullOrEmpty(actualTask) Then
+                    taskName = Regex.Replace(actualTask, ".*Actually task is\s*", "", RegexOptions.IgnoreCase).Trim()
+                ElseIf Not String.IsNullOrEmpty(normalTask) Then
+                    taskName = Regex.Replace(normalTask, ".*Task is\s*", "", RegexOptions.IgnoreCase).Trim()
+                End If
 
-                If Not String.IsNullOrEmpty(finalTask) AndAlso finalTask.StartsWith("Slayer", StringComparison.OrdinalIgnoreCase) Then
-                    If Not String.IsNullOrEmpty(slayerArrow) Then
-                        finalActivity = slayerArrow
-                    ElseIf Not String.IsNullOrEmpty(slayerIdLine) Then
-                        Dim m As System.Text.RegularExpressions.Match =
-                        System.Text.RegularExpressions.Regex.Match(slayerIdLine, "(?i)\bqty\s+(\d+)\b")
-                        If m.Success AndAlso Integer.TryParse(m.Groups(1).Value, Nothing) AndAlso CInt(m.Groups(1).Value) = 0 Then
-                            finalActivity = "Getting new slayer task"
-                        Else
-                            finalActivity = slayerIdLine
-                        End If
-                    Else
-                        finalActivity = Nothing
+                Dim activity As String = ""
+                If Not String.IsNullOrEmpty(slayerArrow) Then
+                    activity = Regex.Replace(slayerArrow, ".*Slayer\s*->\s*", "", RegexOptions.IgnoreCase).Trim()
+                ElseIf Not String.IsNullOrEmpty(genericActivity) Then
+                    activity = Regex.Replace(genericActivity, ".*Activity is\s*", "", RegexOptions.IgnoreCase).Trim()
+                End If
+
+                'really the best I can do without seeing more logs, except everyone keeps cropping their shit. Stop doing that. I'm talking to you.
+                Dim bossingLine As Integer = -1
+                Dim bossingCheckMax As Integer = Math.Min(arr.Count - 1, i + 25)
+                For j As Integer = i + 1 To bossingCheckMax
+                    If arr(j).IndexOf("Bossing Step 0", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                        taskName = "Bossing"
+                        bossingLine = j
+                        Exit For
                     End If
-                Else
-                    finalActivity = genericActivity
+                Next
+
+                If bossingLine <> -1 Then
+                    Dim infernoStart As Integer = Math.Max(0, bossingLine - 25)
+                    Dim infernoEnd As Integer = Math.Min(arr.Count - 1, bossingLine + 25)
+                    For j As Integer = infernoStart To infernoEnd
+                        If arr(j).IndexOf("Infernal Cape", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                            activity = "Inferno"
+                            Exit For
+                        End If
+                    Next
                 End If
 
-                If Not String.IsNullOrWhiteSpace(finalTask) OrElse Not String.IsNullOrWhiteSpace(finalActivity) Then
-                    result.Add(New List(Of String) From {
-                    If(finalTask, String.Empty),
-                    If(finalActivity, String.Empty)
-                })
-                End If
+                result.Add(New List(Of String) From {taskName, activity})
             End If
         Next
-
         Return result
     End Function
-
-
-
-
 
 
     Private Shared Function ExtractExtraFromContext(lines As List(Of String), center As Integer) As String
