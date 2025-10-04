@@ -130,13 +130,17 @@ Steps:
 
 Here’s roughly what it looks like when running:
 
-![Discord Settings](https://i.imgur.com/JhjyYkI.png)  
+![Discord Settings](https://i.postimg.cc/YvWw58YK/Screenshot-2025-10-04-180520.png) 
 
-![Monitor Settings](https://i.imgur.com/bykwrEB.png)  
+![Monitor Settings](https://i.postimg.cc/tsxHKDWy/Screenshot-2025-10-04-180537.png)  
 
-![Information Tab](https://i.imgur.com/cLG3YnL.png)  
+![Information Tab](https://i.postimg.cc/gxZPC48m/Screenshot-2025-10-04-180546.png)  
 
-![Embed Editor](https://i.imgur.com/SpEc4r6.png)  
+![Embed Editor](https://i.postimg.cc/CRqV3Jkw/Screenshot-2025-10-04-180600.png)
+
+![Hamburger Menu](https://i.postimg.cc/w1mdCFLz/Screenshot-2025-10-04-181421.png)
+
+![Example Embed](https://i.postimg.cc/YvWw58Y2/Screenshot-2025-10-04-181557.png)
 
 ---
 
