@@ -6,7 +6,7 @@ The app has a Material Design style interface, saves your settings, and can even
 ---
 ## Download
 
-[Click Here to download the latest release!](https://github.com/MrTysonsHacks/P2P-Monitor/releases)
+[Click Here to download the latest release!](https://github.com/MrTysonsHacks/P2P-Monitor/releases/latest)
 
 
 ## Features
