@@ -8,6 +8,19 @@ The app has a Material Design style interface, saves your settings, and can even
 
 [Click Here to download the latest release!](https://github.com/MrTysonsHacks/P2P-Monitor/releases/latest)
 
+---
+## Usage
+
+[![IMAGE ALT TEXT HERE](https://i.imgur.com/w24sqZM.png)](https://www.youtube.com/watch?v=52tY_gN0mcM)
+
+1. Launch the app.  
+2. Pick your log folders and drop in your webhooks.  
+3. Set mentions (optional) and the check interval.  
+4. Tick the things you want to monitor (chat, quests, errors, etc).  
+5. Hit **Start** and watch the console update.  
+6. Use the **Test** buttons to make sure Discord is set up right. 
+ 
+---
 
 ## Features
 
@@ -141,17 +154,6 @@ Here’s roughly what it looks like when running:
 ![Hamburger Menu](https://i.imgur.com/h3EUP8n.png)
 
 ![Example Embed](https://i.imgur.com/V31OXqe.png)
-
----
-
-## Usage
-
-1. Launch the app.  
-2. Pick your log folders and drop in your webhooks.  
-3. Set mentions (optional) and the check interval.  
-4. Tick the things you want to monitor (chat, quests, errors).  
-5. Hit **Start** and watch the console update.  
-6. Use the **Test** buttons to make sure Discord is set up right.  
 
 ---
 
