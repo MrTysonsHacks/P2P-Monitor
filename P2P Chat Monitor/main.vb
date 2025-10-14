@@ -16,6 +16,7 @@ Imports MaterialSkin.Controls
 Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
 Imports P2P_Chat_Monitor.My
+Imports Microsoft.WindowsAPICodePack.Dialogs
 
 Public Class main
     Private WithEvents cmbLogDir As MaterialSkin.Controls.MaterialComboBox
@@ -321,14 +322,17 @@ Public Class main
     End Function
     Private Const SW_RESTORE As Integer = 9
     Private Sub ChooseLogFolders(sender As Object, e As EventArgs) Handles btnBrowseLogDir.Click
-        Using fbd As New FolderBrowserDialog()
-            fbd.Description = "Select one or more log folders (choose one at a time)"
-            If fbd.ShowDialog() = DialogResult.OK Then
-                If String.IsNullOrWhiteSpace(txtLogDir.Text) Then
-                    txtLogDir.Text = fbd.SelectedPath
-                Else
-                    txtLogDir.Text &= ";" & fbd.SelectedPath
-                End If
+        Using dlg As New CommonOpenFileDialog()
+            dlg.IsFolderPicker = True
+            dlg.Multiselect = True
+            dlg.Title = "Select one or more log folders"
+            dlg.EnsurePathExists = True
+            dlg.EnsureValidNames = True
+
+            If dlg.ShowDialog() = CommonFileDialogResult.Ok Then
+                For Each p In dlg.FileNames
+                    EnsureFolderInText(p)   ' adds if not already present
+                Next
                 SyncComboFromText()
             End If
         End Using
@@ -402,6 +406,7 @@ Public Class main
         AddHandler screenshotmode.CheckedChanged, AddressOf ScreenshotMode_CheckedChangedHandler
 
         SyncComboFromText()
+        LoadCfg()
 
         If String.IsNullOrWhiteSpace(My.Settings.ChatEmbedSet) Then
             My.Settings.ChatEmbedSet = DiscordHelpers.defaultChatTemplate
@@ -515,6 +520,8 @@ Public Class main
         takeSelfie = selfieMode.Checked
         takeScreenshots = captureWin.Checked
         autoCleanup = autoClean.Checked
+
+        SaveCfg()
 
         If String.IsNullOrWhiteSpace(WEBHOOK_URL) OrElse Not WEBHOOK_URL.StartsWith("http") Then
             AppendLog("⚠ Please enter a valid Discord Webhook URL.")
@@ -661,29 +668,22 @@ Public Class main
             AppendLog("⚠ Failed to load rules from Google Sheets: " & ex.Message)
         End Try
     End Function
+
     Private Async Function SendSegments(segments As List(Of List(Of String)),
                                    path As String,
                                    embedTitle As String,
                                    embedColor As Integer,
+                                   Optional screenshotPath As String = Nothing,
                                    Optional failureTrigger As String = "",
                                    Optional failureReason As String = "") As Task
 
+        Dim screenshotRef As String = ""
+        If Not String.IsNullOrWhiteSpace(screenshotPath) AndAlso IO.File.Exists(screenshotPath) Then
+            screenshotRef = IO.Path.GetFileName(screenshotPath)
+        End If
+
         For segIdx = 0 To segments.Count - 1
             Dim seg = segments(segIdx)
-
-            Dim screenshotPath As String = Nothing
-            Dim screenshotRef As String = ""
-            Dim outputRoot As String = IO.Path.GetDirectoryName(path)
-            If takeScreenshots Then
-                screenshotPath = ScreenshotHelpers.SnapAndSend(path, GetFolderName(path), outputRoot, AddressOf AppendLog)
-                If Not String.IsNullOrWhiteSpace(screenshotPath) AndAlso IO.File.Exists(screenshotPath) Then
-                    screenshotRef = IO.Path.GetFileName(screenshotPath)
-                    AppendLog("📸 Screenshot captured.")
-                Else
-                    AppendLog($"⚠ Screenshot path invalid or missing: {screenshotPath}")
-                    screenshotPath = Nothing
-                End If
-            End If
 
             Dim payload As String = Nothing
 
@@ -761,7 +761,8 @@ Public Class main
             If DiscordHelpers.IsJson(payload, err) Then
                 If Not String.IsNullOrWhiteSpace(screenshotPath) AndAlso IO.File.Exists(screenshotPath) Then
                     Await DiscordHelpers.UploadFile(targetWebhook, screenshotPath, payload, AddressOf AppendLog)
-                    If autoCleanup AndAlso IO.File.Exists(screenshotPath) Then
+                    If autoCleanup Then
+                        ' delete in the background after a small delay
                         Await Task.Run(Async Function()
                                            Await Task.Delay(5000)
                                            Try
@@ -938,6 +939,125 @@ Public Class main
         End If
     End Sub
 
+    Private Class AppCfg
+        Public WebhookURL As String
+        Public MentionID As String
+        Public LogFolderPath As String
+        Public ChatID As String
+        Public QuestID As String
+        Public ErrorID As String
+        Public TaskID As String
+        Public SelfieID As String
+        Public CheckInterval As Integer
+        Public BotSelfie As Boolean
+        Public BotSelfieInterval As Integer
+        Public TakeScreenshots As Boolean
+        Public AutoDelete As Boolean
+        Public CheckCombatErr As Boolean
+        Public CheckSkillsErr As Boolean
+        Public CheckQuestsErr As Boolean
+        Public CheckChat As Boolean
+        Public CheckTask As Boolean
+        Public ChatEmbedSet As String
+        Public ErrorEmbedSet As String
+        Public QuestEmbedSet As String
+        Public TaskEmbedSet As String
+        Public DarkModeOn As Boolean
+        Public BlurStats As Boolean
+    End Class
+
+    Private Shared Function GetCfgPath() As String
+        Dim root = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
+        Dim dir = IO.Path.Combine(root, "DreamBot", "P2P Monitor")
+        If Not IO.Directory.Exists(dir) Then IO.Directory.CreateDirectory(dir)
+        Return IO.Path.Combine(dir, "settings.cfg")
+    End Function
+
+    Private Sub SaveCfg()
+        Try
+            Dim cfg As New AppCfg With {
+            .WebhookURL = txtWebhook.Text.Trim(),
+            .MentionID = txtMention.Text.Trim(),
+            .LogFolderPath = txtLogDir.Text.Trim(),
+            .ChatID = chatID.Text.Trim(),
+            .QuestID = questID.Text.Trim(),
+            .ErrorID = errorID.Text.Trim(),
+            .TaskID = taskID.Text.Trim(),
+            .SelfieID = selfieID.Text.Trim(),
+            .CheckInterval = CInt(numIntervalSecond.Value),
+            .BotSelfie = selfieMode.Checked,
+            .BotSelfieInterval = CInt(numSelfieInterval.Value),
+            .TakeScreenshots = captureWin.Checked,
+            .AutoDelete = autoClean.Checked,
+            .CheckCombatErr = combatError.Checked,
+            .CheckSkillsErr = skillIssue.Checked,
+            .CheckQuestsErr = questError.Checked,
+            .CheckChat = chkMonitorChat.Checked,
+            .CheckTask = monitorTask.Checked,
+            .ChatEmbedSet = chatEmbed.Text,
+            .ErrorEmbedSet = errorEmbed.Text,
+            .QuestEmbedSet = questEmbed.Text,
+            .TaskEmbedSet = taskEmbed.Text,
+            .DarkModeOn = DarkModeEnabled.Checked,
+            .BlurStats = obscureSS.Checked
+        }
+            Dim json = Newtonsoft.Json.JsonConvert.SerializeObject(cfg, Formatting.Indented)
+            IO.File.WriteAllText(GetCfgPath(), json, Encoding.UTF8)
+            AppendLog("Settings saved to settings.cfg")
+        Catch ex As Exception
+            AppendLog($"⚠ Failed to save settings.cfg: {ex.Message}")
+        End Try
+    End Sub
+
+    Private Sub LoadCfg()
+        Try
+            Dim path = GetCfgPath()
+            If Not IO.File.Exists(path) Then
+                AppendLog("Settings.cfg not found (using defaults/My.Settings).")
+                Exit Sub
+            End If
+
+            Dim json = IO.File.ReadAllText(path, Encoding.UTF8)
+            Dim cfg = Newtonsoft.Json.JsonConvert.DeserializeObject(Of AppCfg)(json)
+            If cfg Is Nothing Then
+                AppendLog("⚠ Settings.cfg invalid; ignoring.")
+                Exit Sub
+            End If
+
+            txtWebhook.Text = cfg.WebhookURL
+            txtMention.Text = cfg.MentionID
+            txtLogDir.Text = cfg.LogFolderPath
+            chatID.Text = cfg.ChatID
+            questID.Text = cfg.QuestID
+            errorID.Text = cfg.ErrorID
+            taskID.Text = cfg.TaskID
+            selfieID.Text = cfg.SelfieID
+            numIntervalSecond.Value = If(cfg.CheckInterval > 0, cfg.CheckInterval, numIntervalSecond.Value)
+            selfieMode.Checked = cfg.BotSelfie
+            numSelfieInterval.Value = If(cfg.BotSelfieInterval > 0, cfg.BotSelfieInterval, numSelfieInterval.Value)
+            captureWin.Checked = cfg.TakeScreenshots
+            autoClean.Checked = cfg.AutoDelete
+            combatError.Checked = cfg.CheckCombatErr
+            skillIssue.Checked = cfg.CheckSkillsErr
+            questError.Checked = cfg.CheckQuestsErr
+            chkMonitorChat.Checked = cfg.CheckChat
+            monitorTask.Checked = cfg.CheckTask
+            chatEmbed.Text = If(Not String.IsNullOrWhiteSpace(cfg.ChatEmbedSet), cfg.ChatEmbedSet, chatEmbed.Text)
+            errorEmbed.Text = If(Not String.IsNullOrWhiteSpace(cfg.ErrorEmbedSet), cfg.ErrorEmbedSet, errorEmbed.Text)
+            questEmbed.Text = If(Not String.IsNullOrWhiteSpace(cfg.QuestEmbedSet), cfg.QuestEmbedSet, questEmbed.Text)
+            taskEmbed.Text = If(Not String.IsNullOrWhiteSpace(cfg.TaskEmbedSet), cfg.TaskEmbedSet, taskEmbed.Text)
+            DarkModeEnabled.Checked = cfg.DarkModeOn
+            obscureSS.Checked = cfg.BlurStats
+
+            SyncComboFromText()
+            ApplyTheme(DarkModeEnabled.Checked)
+
+            AppendLog("Settings.cfg loaded.")
+        Catch ex As Exception
+            AppendLog($"⚠ Failed to load settings.cfg: {ex.Message}")
+        End Try
+    End Sub
+
     Private Sub CommonButtons(sender As Object, e As EventArgs) Handles clearBtn.Click, forcecheckBtn.Click, wikiBtn.Click, p2pdiscordBtn.Click, dbdiscordBtn.Click, dbforumBtn.Click, p2psalesBtn.Click, p2psetupBtn.Click, p2psurvivalBtn.Click, p2pgearBtn.Click
         If sender Is clearBtn Then
             txtLog.Clear()
@@ -995,7 +1115,7 @@ Public Class main
 
     Private Async Sub SendTestWebhooks(sender As Object, e As EventArgs) Handles testBtn.Click
         Dim webhookMap As New Dictionary(Of String, String) From {
-        {"Default Webhook", txtWebhook.Text.Trim}, {"Quest Webhook", questID.Text.Trim}, {"Error Webhook", errorID.Text.Trim}, {"Chat Webhook", chatID.Text.Trim}
+        {"Default Webhook", txtWebhook.Text.Trim}, {"Quest Webhook", questID.Text.Trim}, {"Error Webhook", errorID.Text.Trim}, {"Chat Webhook", chatID.Text.Trim}, {"Task Webhook", taskID.Text.Trim}, {"Selfie Webhook", selfieID.Text.Trim}
     }
 
         For Each entry In webhookMap
@@ -1035,11 +1155,14 @@ Public Class main
         Dim taskLine As String = "Simulated Task"
         Dim activityLine As String = "Simulated Activity"
         Dim screenshotRef As String = "https://i.imgur.com/fRKkKy5.png"
+
         Dim errorWebhook As String = errorID.Text.Trim()
         Dim chatWebhook As String = chatID.Text.Trim()
         Dim questWebhook As String = questID.Text.Trim()
+        Dim taskWebhook As String = taskID.Text.Trim()
+        Dim selfieWebhook As String = selfieID.Text.Trim()
 
-        If Not String.IsNullOrWhiteSpace(errorEmbed.Text.Trim()) Then
+        If Not String.IsNullOrWhiteSpace(errorEmbed.Text.Trim()) AndAlso Not String.IsNullOrWhiteSpace(errorWebhook) Then
             Dim payload = DiscordHelpers.BuildErrorPayload(
             errorEmbed.Text.Trim(),
             DISCORD_MENTION,
@@ -1060,7 +1183,7 @@ Public Class main
             End If
         End If
 
-        If Not String.IsNullOrWhiteSpace(chatEmbed.Text.Trim()) Then
+        If Not String.IsNullOrWhiteSpace(chatEmbed.Text.Trim()) AndAlso Not String.IsNullOrWhiteSpace(chatWebhook) Then
             Dim payload = DiscordHelpers.BuildChatPayload(
             chatEmbed.Text.Trim(),
             DISCORD_MENTION,
@@ -1082,7 +1205,7 @@ Public Class main
             End If
         End If
 
-        If Not String.IsNullOrWhiteSpace(questEmbed.Text.Trim()) Then
+        If Not String.IsNullOrWhiteSpace(questEmbed.Text.Trim()) AndAlso Not String.IsNullOrWhiteSpace(questWebhook) Then
             Dim payload = DiscordHelpers.BuildQuestPayload(
             questEmbed.Text.Trim(),
             DISCORD_MENTION,
@@ -1103,8 +1226,7 @@ Public Class main
             End If
         End If
 
-
-        If Not String.IsNullOrWhiteSpace(taskEmbed.Text.Trim()) Then
+        If Not String.IsNullOrWhiteSpace(taskEmbed.Text.Trim()) AndAlso Not String.IsNullOrWhiteSpace(taskWebhook) Then
             Dim payload = DiscordHelpers.BuildTaskPayload(
             taskEmbed.Text.Trim(),
             DISCORD_MENTION,
@@ -1119,13 +1241,26 @@ Public Class main
 
             Dim err As String = Nothing
             If DiscordHelpers.IsJson(payload, err) Then
-                Await DiscordHelpers.PostJson(txtWebhook.Text.Trim(), payload)
-                AppendLog("✅ Test Task embed sent.")
+                Await DiscordHelpers.PostJson(taskWebhook, payload)
+                AppendLog("✅ Test Task embed sent (Task webhook).")
             Else
                 AppendLog($"⚠ Invalid JSON in Task embed: {err}")
             End If
         End If
+
+        If Not String.IsNullOrWhiteSpace(selfieWebhook) AndAlso selfieWebhook.StartsWith("http", StringComparison.OrdinalIgnoreCase) Then
+            Dim selfiePayload As String = "{""content"": ""Test Selfie""}"
+            Try
+                Await DiscordHelpers.PostJson(selfieWebhook, selfiePayload)
+                AppendLog("✅ Test Selfie message sent (Selfie webhook).")
+            Catch ex As Exception
+                AppendLog("❌ Failed to send Test Selfie message: " & ex.Message)
+            End Try
+        Else
+            AppendLog("ℹ Selfie webhook empty/invalid; skipping Test Selfie.")
+        End If
     End Sub
+
     Private Sub embedEditors_Click(sender As Object, e As EventArgs) Handles embedEditors.Click
         Dim selector As New EmbedSelector()
         selector.ShowDialog(Me)

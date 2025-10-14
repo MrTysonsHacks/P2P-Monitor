@@ -76,7 +76,7 @@ Public Class LogHelper
                                          combatFailureTriggers As List(Of Regex),
                                          combatFailureReasons As List(Of KeyValuePair(Of Regex, String)),
                                          AppendLog As Action(Of String),
-                                         SendSegments As Func(Of List(Of List(Of String)), String, String, Integer, Task),
+                                         SendSegments As Func(Of List(Of List(Of String)), String, String, Integer, String, Task),
                                          PostFailAlert As Func(Of String, String, String, String, Task),
                                          GetFolderName As Func(Of String, String)) As Task(Of Boolean)
 
@@ -130,7 +130,8 @@ Public Class LogHelper
                     Dim screenshotPath As String = Nothing
                     If takeScreenshots Then
                         Dim logRoot As String = System.IO.Path.GetDirectoryName(path)
-                        screenshotPath = ScreenshotHelpers.SnapAndSend(path, folderName, logRoot, AppendLog)
+                        Dim perAccountDir As String = System.IO.Path.Combine(logRoot, folderName)
+                        screenshotPath = ScreenshotHelpers.SnapAndSend(path, folderName, perAccountDir, AppendLog)
                         If Not String.IsNullOrWhiteSpace(screenshotPath) Then
                             AppendLog("📸 Screenshot captured.")
                         Else
@@ -139,7 +140,7 @@ Public Class LogHelper
                     End If
 
                     AppendLog($"📨 Found {chatSegments.Count} chat event(s)")
-                    Await SendSegments(chatSegments, path, "P2P Chat Event", &H7289DA)
+                    Await SendSegments(chatSegments, path, "P2P Chat Event", &H7289DA, screenshotPath)
                 End If
             End If
 
@@ -149,7 +150,8 @@ Public Class LogHelper
                     Dim screenshotPath As String = Nothing
                     If takeScreenshots Then
                         Dim logRoot As String = System.IO.Path.GetDirectoryName(path)
-                        screenshotPath = ScreenshotHelpers.SnapAndSend(path, folderName, logRoot, AppendLog)
+                        Dim perAccountDir As String = System.IO.Path.Combine(logRoot, folderName)
+                        screenshotPath = ScreenshotHelpers.SnapAndSend(path, folderName, perAccountDir, AppendLog)
                         If Not String.IsNullOrWhiteSpace(screenshotPath) Then
                             AppendLog("📸 Screenshot captured.")
                         Else
@@ -158,7 +160,7 @@ Public Class LogHelper
                     End If
 
                     AppendLog($"🏆 Found {questSegments.Count} quest(s)")
-                    Await SendSegments(questSegments, path, "Quest Event", &HFFD700)
+                    Await SendSegments(questSegments, path, "Quest Event", &HFFD700, screenshotPath)
                 End If
             End If
 
@@ -172,7 +174,8 @@ Public Class LogHelper
                     Dim screenshotPath As String = ""
                     If takeScreenshots Then
                         Dim logRoot As String = System.IO.Path.GetDirectoryName(path)
-                        screenshotPath = ScreenshotHelpers.SnapAndSend(path, folderName, logRoot, AppendLog)
+                        Dim perAccountDir As String = System.IO.Path.Combine(logRoot, folderName)
+                        screenshotPath = ScreenshotHelpers.SnapAndSend(path, folderName, perAccountDir, AppendLog)
                         If Not String.IsNullOrWhiteSpace(screenshotPath) Then
                             AppendLog("📸 Screenshot captured.")
                         Else
@@ -181,7 +184,7 @@ Public Class LogHelper
                     End If
 
                     AppendLog($"📝 Found {taskSegments.Count} task(s)")
-                    Await SendSegments(taskSegments, path, "Task Event", &H57F287)
+                    Await SendSegments(taskSegments, path, "Task Event", &H57F287, screenshotPath)
                 End If
             End If
 

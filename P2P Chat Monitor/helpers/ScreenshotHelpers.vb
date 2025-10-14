@@ -1,6 +1,7 @@
 ﻿Imports System.Drawing
 Imports System.Runtime.InteropServices
 Imports System.Text
+Imports Newtonsoft.Json.Linq
 
 Public Class ScreenshotHelpers
 
@@ -53,6 +54,32 @@ Public Class ScreenshotHelpers
     Private Shared Function ClientToScreen(hWnd As IntPtr, ByRef lpPoint As POINT) As Boolean
     End Function
 
+    <DllImport("user32.dll", CharSet:=CharSet.Unicode, SetLastError:=True)>
+    Private Shared Function GetClassName(hWnd As IntPtr, lpClassName As StringBuilder, nMaxCount As Integer) As Integer
+    End Function
+
+    <DllImport("user32.dll", SetLastError:=True)>
+    Private Shared Function GetWindowThreadProcessId(hWnd As IntPtr, ByRef lpdwProcessId As Integer) As Integer
+    End Function
+
+    <DllImport("kernel32.dll", SetLastError:=True, CharSet:=CharSet.Unicode)>
+    Private Shared Function QueryFullProcessImageName(hProcess As IntPtr, dwFlags As Integer, lpExeName As StringBuilder, ByRef lpdwSize As Integer) As Boolean
+    End Function
+
+    <DllImport("kernel32.dll", SetLastError:=True)>
+    Private Shared Function OpenProcess(dwDesiredAccess As Integer, bInheritHandle As Boolean, dwProcessId As Integer) As IntPtr
+    End Function
+
+    <DllImport("kernel32.dll", SetLastError:=True)>
+    Private Shared Function CloseHandle(hObject As IntPtr) As Boolean
+    End Function
+
+    <DllImport("user32.dll")>
+    Private Shared Function IsWindowVisible(hWnd As IntPtr) As Boolean
+    End Function
+
+    Private Const PROCESS_QUERY_LIMITED_INFORMATION As Integer = &H1000
+
     <StructLayout(LayoutKind.Sequential)>
     Private Structure POINT
         Public X As Integer
@@ -73,25 +100,116 @@ Public Class ScreenshotHelpers
     Private Const SW_RESTORE As Integer = 9
     Private Const SW_MINIMIZE As Integer = 6
 
+    Private Shared ReadOnly BrowserExeNames As HashSet(Of String) =
+    New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {
+        "chrome.exe", "msedge.exe", "firefox.exe", "opera.exe", "brave.exe", "iexplore.exe"
+    }
+
+    Private Shared Function GetWindowTextSafe(hWnd As IntPtr) As String
+        Dim len = GetWindowTextLength(hWnd)
+        If len <= 0 Then Return ""
+        Dim sb As New StringBuilder(len + 1)
+        GetWindowText(hWnd, sb, sb.Capacity)
+        Return sb.ToString()
+    End Function
+
+    Private Shared Function GetWindowClass(hWnd As IntPtr) As String
+        Dim sb As New StringBuilder(256)
+        If GetClassName(hWnd, sb, sb.Capacity) > 0 Then Return sb.ToString()
+        Return ""
+    End Function
+
+    Private Shared Function TryGetProcessExe(hWnd As IntPtr, ByRef exe As String) As Boolean
+        exe = ""
+        Dim pid As Integer = 0
+        GetWindowThreadProcessId(hWnd, pid)
+        If pid = 0 Then Return False
+        Dim hProc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        If hProc <> IntPtr.Zero Then
+            Try
+                Dim sb As New StringBuilder(1024)
+                Dim size As Integer = sb.Capacity
+                If QueryFullProcessImageName(hProc, 0, sb, size) Then
+                    exe = sb.ToString(0, size)
+                    Return True
+                End If
+            Finally
+                CloseHandle(hProc)
+            End Try
+        End If
+
+        Try
+            Dim p = Process.GetProcessById(pid)
+            exe = p.MainModule.FileName
+            Return Not String.IsNullOrEmpty(exe)
+        Catch
+            Return False
+        End Try
+    End Function
+
+    Private Shared Function IsLikelyBrowser(hWnd As IntPtr) As Boolean
+        Dim exe As String = ""
+        If TryGetProcessExe(hWnd, exe) AndAlso exe.Length > 0 Then
+            If BrowserExeNames.Contains(IO.Path.GetFileName(exe)) Then Return True
+        End If
+
+        Dim cls = GetWindowClass(hWnd)
+        If cls.StartsWith("Chrome_WidgetWin", StringComparison.OrdinalIgnoreCase) _
+       OrElse cls.Equals("MozillaWindowClass", StringComparison.OrdinalIgnoreCase) _
+       OrElse cls.Equals("ApplicationFrameWindow", StringComparison.OrdinalIgnoreCase) Then
+            Return True
+        End If
+        Return False
+    End Function
+
+    Private Shared Function ScoreDreamBotCandidate(hWnd As IntPtr, title As String, nickname As String) As Integer
+        Dim score = 0
+        If title.IndexOf("DreamBot", StringComparison.OrdinalIgnoreCase) >= 0 Then score += 5
+        If Not String.IsNullOrWhiteSpace(nickname) AndAlso title.IndexOf(nickname, StringComparison.OrdinalIgnoreCase) >= 0 Then score += 4
+        If IsWindowVisible(hWnd) Then score += 2
+
+        Dim rc As RECT
+        If GetClientRect(hWnd, rc) Then
+            Dim w = rc.Right - rc.Left
+            Dim h = rc.Bottom - rc.Top
+            If w >= 400 AndAlso h >= 300 Then score += 2
+        End If
+
+        Dim cls = GetWindowClass(hWnd)
+        If cls.StartsWith("SunAwt", StringComparison.OrdinalIgnoreCase) _
+       OrElse cls.IndexOf("LWJGL", StringComparison.OrdinalIgnoreCase) >= 0 Then
+            score += 1
+        End If
+        Return score
+    End Function
+
     Public Shared Function PickBotWindow(folderName As String) As IntPtr
         If String.IsNullOrWhiteSpace(folderName) Then Return IntPtr.Zero
-        Dim result As IntPtr = IntPtr.Zero
+
+        Dim best As IntPtr = IntPtr.Zero
+        Dim bestScore As Integer = Integer.MinValue
         Dim needle As String = folderName.Trim()
+
         EnumWindows(Function(h, p)
-                        Dim len = GetWindowTextLength(h)
-                        If len > 0 Then
-                            Dim sb As New StringBuilder(len + 1)
-                            GetWindowText(h, sb, sb.Capacity)
-                            Dim title = sb.ToString()
-                            If title.IndexOf("DreamBot", StringComparison.OrdinalIgnoreCase) >= 0 AndAlso
-                               title.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0 Then
-                                result = h
-                                Return False
-                            End If
+                        Dim title = GetWindowTextSafe(h)
+                        If String.IsNullOrWhiteSpace(title) Then Return True
+                        'fix for hoody, must contain dreambot and account nickname token
+                        If title.IndexOf("DreamBot", StringComparison.OrdinalIgnoreCase) < 0 Then Return True
+                        If title.IndexOf(needle, StringComparison.OrdinalIgnoreCase) < 0 Then Return True
+
+                        If IsLikelyBrowser(h) Then
+                            Return True
+                        End If
+
+                        Dim score = ScoreDreamBotCandidate(h, title, needle)
+                        If score > bestScore Then
+                            bestScore = score
+                            best = h
                         End If
                         Return True
                     End Function, IntPtr.Zero)
-        Return result
+
+        Return best
     End Function
 
     Public Shared Function FindByTitleChunk(titleContains As String) As IntPtr
@@ -110,6 +228,7 @@ Public Class ScreenshotHelpers
                     End Function, IntPtr.Zero)
         Return result
     End Function
+
     Private Shared Function TryPrintWindowBitmap(hWnd As IntPtr, Optional log As Action(Of String) = Nothing) As Bitmap
         Dim r As RECT
         Dim hr As Integer = DwmGetWindowAttribute(hWnd, DWMWA_EXTENDED_FRAME_BOUNDS, r, Runtime.InteropServices.Marshal.SizeOf(GetType(RECT)))
@@ -151,6 +270,28 @@ Public Class ScreenshotHelpers
         Return bmp
     End Function
 
+    Private Shared Function GetStatsRegion(bmp As Bitmap) As Rectangle
+        Const boxW As Integer = 390
+        Const boxH As Integer = 152
+        Const leftMargin As Integer = 130
+        Const bottomMargin As Integer = 16
+
+        If bmp Is Nothing OrElse bmp.Width <= 0 OrElse bmp.Height <= 0 Then
+            Return Rectangle.Empty
+        End If
+
+        Dim x As Integer = Math.Min(leftMargin, Math.Max(0, bmp.Width - boxW))
+
+        Dim y As Integer = Math.Max(0, bmp.Height - bottomMargin - boxH)
+
+        Dim w As Integer = Math.Min(boxW, bmp.Width)
+        Dim h As Integer = Math.Min(boxH, bmp.Height)
+        If x + w > bmp.Width Then x = Math.Max(0, bmp.Width - w)
+        If y + h > bmp.Height Then y = Math.Max(0, bmp.Height - h)
+
+        Return New Rectangle(x, y, w, h)
+    End Function
+
     Private Shared Sub BlurRegion(ByRef bmp As Bitmap, region As Rectangle, Optional blurSize As Integer = 12)
         If bmp Is Nothing Then Exit Sub
         If region.Width <= 0 OrElse region.Height <= 0 Then Exit Sub
@@ -182,6 +323,80 @@ Public Class ScreenshotHelpers
             g.DrawImage(blurred, region.Location)
         End Using
     End Sub
+
+    Private Shared ReadOnly _rng As New Random()
+
+    Private Shared Sub DrawCenteredWatermark(bmp As Bitmap, rect As Rectangle)
+        If bmp Is Nothing OrElse rect.Width <= 0 OrElse rect.Height <= 0 Then Exit Sub
+
+        Dim text As String = "P2P Monitor By CaS5"
+        Dim roll As Integer
+        SyncLock _rng
+            roll = _rng.Next(100)
+        End SyncLock
+        If roll = 0 Then text = "Choco Is A Pussy"
+
+        Using g As Graphics = Graphics.FromImage(bmp)
+            g.TextRenderingHint = Drawing.Text.TextRenderingHint.AntiAliasGridFit
+            Using font As New Font("Roboto", 25, FontStyle.Bold, GraphicsUnit.Pixel)
+                Dim sf As New StringFormat() With {
+                .Alignment = StringAlignment.Center,
+                .LineAlignment = StringAlignment.Center
+            }
+                Dim shadowRect As New Rectangle(rect.X + 1, rect.Y + 1, rect.Width, rect.Height)
+                Using shadow As New SolidBrush(Color.Black)
+                    g.DrawString(text, font, shadow, shadowRect, sf)
+                End Using
+                Using fore As New SolidBrush(Color.White)
+                    g.DrawString(text, font, fore, rect, sf)
+                End Using
+            End Using
+        End Using
+    End Sub
+
+    Private Shared Function TryReadDreamBotSettings(ByRef outW As Integer, ByRef outH As Integer, ByRef devMode As Boolean, Optional log As Action(Of String) = Nothing) As Boolean
+        outW = 0 : outH = 0 : devMode = False
+        Try
+            Dim jsonPath As String = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "DreamBot", "BotData", "settings.json")
+            If Not IO.File.Exists(jsonPath) Then
+                log?.Invoke($"ℹ settings.json not found at {jsonPath}")
+                Return False
+            End If
+
+            Dim text As String = IO.File.ReadAllText(jsonPath)
+            Dim root As JObject = JObject.Parse(text)
+
+            Dim devTok As JToken = root.SelectToken("$..developerMode")
+            If devTok IsNot Nothing Then
+                Select Case devTok.Type
+                    Case JTokenType.Boolean
+                        devMode = CBool(devTok)
+                    Case JTokenType.Integer
+                        devMode = (CInt(devTok) <> 0)
+                    Case JTokenType.String
+                        Dim s = devTok.ToString().Trim().ToLowerInvariant()
+                        devMode = (s = "true")
+                End Select
+            End If
+
+            Dim sizeTok As JToken = root.SelectToken("$..lastCanvasSize")
+            If sizeTok IsNot Nothing AndAlso sizeTok.Type = JTokenType.String Then
+                Dim parts = sizeTok.ToString().Split(":"c)
+                Dim w As Integer, h As Integer
+                If parts.Length = 2 AndAlso Integer.TryParse(parts(0).Trim(), w) AndAlso Integer.TryParse(parts(1).Trim(), h) Then
+                    outW = Math.Max(1, w)
+                    outH = Math.Max(1, h)
+                End If
+            End If
+
+            log?.Invoke($"settings.json parsed → size={outW}x{outH}, developerMode={devMode}, mtime={IO.File.GetLastWriteTime(jsonPath):yyyy-MM-dd HH:mm:ss}")
+            Return True
+        Catch ex As Exception
+            log?.Invoke($"⚠ settings.json parse error: {ex.Message}")
+            Return False
+        End Try
+    End Function
+
     Public Shared Function SnapAndSend(path As String, folderName As String, folderDir As String, log As Action(Of String)) As String
         Dim hWnd As IntPtr = PickBotWindow(folderName)
         If hWnd = IntPtr.Zero Then
@@ -195,10 +410,17 @@ Public Class ScreenshotHelpers
             Return Nothing
         End If
 
-        Dim targetW As Integer = Math.Min(765, bmp.Width)
-        Dim targetH As Integer = Math.Min(503, bmp.Height)
-        Dim offsetY As Integer = 10
+        Dim desiredW As Integer = 0, desiredH As Integer = 0, devMode As Boolean = False
+        If Not TryReadDreamBotSettings(desiredW, desiredH, devMode, log) Then
+            desiredW = bmp.Width : desiredH = bmp.Height : devMode = False
+        ElseIf desiredW <= 0 OrElse desiredH <= 0 Then
+            desiredW = bmp.Width : desiredH = bmp.Height
+        End If
 
+        Dim targetW As Integer = Math.Min(desiredW, bmp.Width)
+        Dim targetH As Integer = Math.Min(desiredH, bmp.Height)
+
+        Dim offsetY As Integer = If(devMode, 10, -5)
         Dim startX As Integer = Math.Max(0, (bmp.Width - targetW) \ 2)
         Dim startY As Integer = Math.Max(0, ((bmp.Height - targetH) \ 2) + offsetY)
 
@@ -212,22 +434,16 @@ Public Class ScreenshotHelpers
 
         Try
             If My.Settings.BlurStats AndAlso bmp IsNot Nothing Then
-                Dim sensitiveArea As New Rectangle(130, 335, 390, 152)
-                BlurRegion(bmp, sensitiveArea, 15)
-                Using g As Graphics = Graphics.FromImage(bmp)
-                    Using font As New Font("Roboto", 25, FontStyle.Bold, GraphicsUnit.Pixel)
-                        Using brush As New SolidBrush(Color.White), shadowBrush As New SolidBrush(Color.Black)
-                            Dim text As String = "P2P Monitor By CaS5"
-                            Dim textX As Integer = 200
-                            Dim textY As Integer = 400
-                            g.DrawString(text, font, shadowBrush, textX + 1, textY + 1)
-                            g.DrawString(text, font, brush, textX, textY)
-                        End Using
-                    End Using
-                End Using
+                Dim sensitiveArea As Rectangle = GetStatsRegion(bmp)
+                If sensitiveArea.Width >= 2 AndAlso sensitiveArea.Height >= 2 Then
+                    BlurRegion(bmp, sensitiveArea, 15)
+                    DrawCenteredWatermark(bmp, sensitiveArea)
+                Else
+                    log?.Invoke("ℹ Skipped blur (stats rect too small).")
+                End If
             End If
         Catch ex As Exception
-            log?.Invoke($"⚠ Blur error: {ex.Message}")
+            log?.Invoke($"⚠ Blur/watermark error: {ex.Message}")
         End Try
 
         If Not IO.Directory.Exists(folderDir) Then IO.Directory.CreateDirectory(folderDir)
@@ -239,7 +455,6 @@ Public Class ScreenshotHelpers
         log?.Invoke($"📸 Saved screenshot for {folderName} to {filePath}")
         Return filePath
     End Function
-
 
     Public Shared Async Function CaptureBotSelfie(folderName As String, outDir As String, log As Action(Of String)) As Task(Of String)
         Dim hWnd As IntPtr = PickBotWindow(folderName)
@@ -254,9 +469,17 @@ Public Class ScreenshotHelpers
             Return Nothing
         End If
 
-        Dim targetW As Integer = Math.Min(765, bmp.Width)
-        Dim targetH As Integer = Math.Min(503, bmp.Height)
-        Dim offsetY As Integer = 10
+        Dim desiredW As Integer = 0, desiredH As Integer = 0, devMode As Boolean = False
+        If Not TryReadDreamBotSettings(desiredW, desiredH, devMode, log) Then
+            desiredW = bmp.Width : desiredH = bmp.Height : devMode = False
+        ElseIf desiredW <= 0 OrElse desiredH <= 0 Then
+            desiredW = bmp.Width : desiredH = bmp.Height
+        End If
+
+        Dim targetW As Integer = Math.Min(desiredW, bmp.Width)
+        Dim targetH As Integer = Math.Min(desiredH, bmp.Height)
+
+        Dim offsetY As Integer = If(devMode, 10, -5)
         Dim startX As Integer = Math.Max(0, (bmp.Width - targetW) \ 2)
         Dim startY As Integer = Math.Max(0, ((bmp.Height - targetH) \ 2) + offsetY)
 
@@ -270,22 +493,16 @@ Public Class ScreenshotHelpers
 
         Try
             If My.Settings.BlurStats AndAlso bmp IsNot Nothing Then
-                Dim sensitiveArea As New Rectangle(130, 335, 390, 152)
-                BlurRegion(bmp, sensitiveArea, 15)
-                Using g As Graphics = Graphics.FromImage(bmp)
-                    Dim font As New Font("Roboto", 25, FontStyle.Bold, GraphicsUnit.Pixel)
-                    Dim brush As New SolidBrush(Color.White)
-                    Dim shadowBrush As New SolidBrush(Color.Black)
-
-                    Dim text As String = "P2P Monitor By CaS5"
-                    Dim x As Integer = 200
-                    Dim y As Integer = 400
-                    g.DrawString(text, font, shadowBrush, x + 2, y + 2)
-                    g.DrawString(text, font, brush, x, y)
-                End Using
+                Dim sensitiveArea As Rectangle = GetStatsRegion(bmp)
+                If sensitiveArea.Width >= 2 AndAlso sensitiveArea.Height >= 2 Then
+                    BlurRegion(bmp, sensitiveArea, 15)
+                    DrawCenteredWatermark(bmp, sensitiveArea)
+                Else
+                    log?.Invoke("ℹ Skipped blur (stats rect too small).")
+                End If
             End If
         Catch ex As Exception
-            log?.Invoke($"⚠ Selfie blur error: {ex.Message}")
+            log?.Invoke($"⚠ Selfie blur/watermark error: {ex.Message}")
         End Try
 
         If Not IO.Directory.Exists(outDir) Then IO.Directory.CreateDirectory(outDir)
