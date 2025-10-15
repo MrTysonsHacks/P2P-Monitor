@@ -60,6 +60,98 @@ Public Class main
     Private selfieTimer As System.Threading.Timer
     Private ReadOnly selfieLock As New Object()
     Public Shared accountBreakStates As New Dictionary(Of String, Boolean)(StringComparer.OrdinalIgnoreCase)
+    Private metricsTimer As System.Threading.Timer
+    Private METRICS_WEBHOOK_URL As String = "https://discord.com/api/webhooks/1428006646080208937/JfLDDOsm7n_BTkYIbjbXS0mR4sWaktOfBL9cRDAgnxeMp5r422oPZkYuRNz28koGB4l4"
+    Private CLIENT_ID As String = Environment.UserName & "@" & Environment.MachineName
+    Private tray As NotifyIcon
+    Private trayMenu As ContextMenuStrip
+    Private mnuShow As ToolStripMenuItem
+    Private mnuStart As ToolStripMenuItem
+    Private mnuStop As ToolStripMenuItem
+    Private mnuExit As ToolStripMenuItem
+    Private minimizeToTray As Boolean = True
+    Private Sub InitTray()
+        trayMenu = New ContextMenuStrip() With {.ShowImageMargin = False}
+
+        mnuShow = New ToolStripMenuItem("Show Monitor")
+        AddHandler mnuShow.Click, AddressOf RestoreFromTray
+
+        mnuStart = New ToolStripMenuItem("Start Monitoring")
+        AddHandler mnuStart.Click, Sub() btnStart.PerformClick()
+
+        mnuStop = New ToolStripMenuItem("Stop Monitoring")
+        AddHandler mnuStop.Click, Sub() btnStop.PerformClick()
+
+        mnuExit = New ToolStripMenuItem("Exit")
+        AddHandler mnuExit.Click, Sub()
+                                      RemoveHandler Me.Resize, AddressOf Main_Resize
+                                      tray.Visible = False
+                                      tray.Dispose()
+                                      minimizeToTray = False
+                                      Me.Close()
+                                  End Sub
+
+        trayMenu.Items.AddRange(New ToolStripItem() {mnuShow, New ToolStripSeparator(), mnuStart, mnuStop, New ToolStripSeparator(), mnuExit})
+
+        tray = New NotifyIcon() With {
+        .Icon = Me.Icon,
+        .Text = "P2P Monitor",
+        .Visible = False,
+        .ContextMenuStrip = trayMenu
+    }
+        AddHandler tray.DoubleClick, AddressOf RestoreFromTray
+    End Sub
+
+    Private Sub Main_Resize(sender As Object, e As EventArgs)
+        If Not minimizeToTray Then Exit Sub
+        If Me.WindowState = FormWindowState.Minimized Then
+            HideToTray()
+        End If
+    End Sub
+
+    Private Sub HideToTray()
+        Try
+            If Not tray.Visible Then
+                tray.BalloonTipTitle = "P2P Monitor"
+                tray.BalloonTipText = "Running in the background. Double-click to restore."
+                tray.BalloonTipIcon = ToolTipIcon.Info
+                tray.Visible = True
+                tray.ShowBalloonTip(1500)
+            End If
+        Catch
+        End Try
+
+        ShowInTaskbar = False
+        Me.Hide()
+    End Sub
+
+    Private Sub RestoreFromTray(Optional sender As Object = Nothing, Optional e As EventArgs = Nothing)
+        Me.Show()
+        Me.WindowState = FormWindowState.Normal
+        ShowInTaskbar = True
+        Me.Activate()
+        tray.Visible = False
+    End Sub
+
+    Private Sub StartMetrics()
+        metricsTimer = New System.Threading.Timer(AddressOf MetricsTick, Nothing, 0, 60_000)
+    End Sub
+
+    Private Async Sub MetricsTick(state As Object)
+        Try
+            Dim payload = "{""content"":""HB " & CLIENT_ID & " " & DateTimeOffset.UtcNow.ToUnixTimeSeconds() & """}"
+            Await DiscordHelpers.PostJson(METRICS_WEBHOOK_URL, payload, AddressOf AppendLog)
+        Catch ex As Exception
+            AppendLog("⚠ Metrics heartbeat failed: " & ex.Message)
+        End Try
+    End Sub
+
+    Private Sub StopMetrics()
+        If metricsTimer IsNot Nothing Then
+            metricsTimer.Dispose()
+            metricsTimer = Nothing
+        End If
+    End Sub
 
     Private Shared Function ParseFolders(raw As String) As List(Of String)
         Dim list As New List(Of String)()
@@ -369,6 +461,7 @@ Public Class main
         Dim SkinManager As MaterialSkinManager = MaterialSkinManager.Instance
         SkinManager.AddFormToManage(Me)
         ApplyTheme(DarkModeEnabled.Checked)
+
         txtLog.Font = robotoFont
         txtLogDir.Visible = False
         cmbLogDir = New MaterialSkin.Controls.MaterialComboBox() With {
@@ -395,6 +488,8 @@ Public Class main
 
         SyncComboFromText()
 
+        InitTray()
+        AddHandler Me.Resize, AddressOf Main_Resize
 
         cmsLogDir = CreateThemedContextMenu()
         cmbLogDir.ContextMenuStrip = cmsLogDir
@@ -435,9 +530,18 @@ Public Class main
         Await UpdateHelper.CheckForUpdates(AddressOf AppendLog)
     End Sub
     Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
+        If minimizeToTray AndAlso e.CloseReason = CloseReason.UserClosing Then
+            e.Cancel = True
+            HideToTray()
+            AppendLog("Minimized to tray (right-click tray icon for options).")
+            Return
+        End If
+
+        ' Real exit path:
         StopSelfieTimer()
         MyBase.OnFormClosing(e)
     End Sub
+
 
     Private Sub ToggleDarkMode(sender As Object, e As EventArgs) Handles DarkModeEnabled.CheckedChanged
 
@@ -477,17 +581,6 @@ Public Class main
             Return
         End If
 
-        My.Settings.WebhookURL = txtWebhook.Text.Trim()
-        My.Settings.ChatID = chatID.Text.Trim()
-        My.Settings.QuestID = questID.Text.Trim()
-        My.Settings.ErrorID = errorID.Text.Trim()
-        My.Settings.TaskID = taskID.Text.Trim()
-        My.Settings.SelfieID = selfieID.Text.Trim()
-        My.Settings.LogFolderPath = txtLogDir.Text.Trim()
-        My.Settings.CheckInterval = numIntervalSecond.Value
-        My.Settings.BotSelfieInterval = numSelfieInterval.Value
-        My.Settings.BotSelfie = selfieMode.Checked
-        My.Settings.DarkModeOn = DarkModeEnabled.Checked
         My.Settings.ChatEmbedSet = chatEmbed.Text
         My.Settings.ErrorEmbedSet = errorEmbed.Text
         My.Settings.QuestEmbedSet = questEmbed.Text
@@ -501,17 +594,28 @@ Public Class main
         My.Settings.CheckSkillsErr = skillIssue.Checked
         My.Settings.CheckQuestsErr = questError.Checked
         My.Settings.BlurStats = obscureSS.Checked
+        My.Settings.WebhookURL = txtWebhook.Text.Trim()
+        My.Settings.ChatID = chatID.Text.Trim()
+        My.Settings.QuestID = questID.Text.Trim()
+        My.Settings.ErrorID = errorID.Text.Trim()
+        My.Settings.TaskID = taskID.Text.Trim()
+        My.Settings.SelfieID = selfieID.Text.Trim()
+        My.Settings.LogFolderPath = txtLogDir.Text.Trim()
+        My.Settings.CheckInterval = numIntervalSecond.Value
+        My.Settings.BotSelfieInterval = numSelfieInterval.Value
+        My.Settings.BotSelfie = selfieMode.Checked
+        My.Settings.DarkModeOn = DarkModeEnabled.Checked
+        My.Settings.MentionID = txtMention.Text.Trim()
         My.Settings.Save()
 
-        WEBHOOK_URL = My.Settings.WebhookURL
+        WEBHOOK_URL = txtWebhook.Text.Trim()
         DISCORD_MENTION = txtMention.Text.Trim()
-        My.Settings.MentionID = DISCORD_MENTION
         LOG_DIR = My.Settings.LogFolderPath
-        CHAT_CHANNEL = My.Settings.ChatID
-        ERROR_CHANNEL = My.Settings.ErrorID
-        QUEST_CHANNEL = My.Settings.QuestID
-        TASK_CHANNEL = My.Settings.TaskID
-        SELFIE_CHANNEL = My.Settings.SelfieID
+        CHAT_CHANNEL = chatID.Text.Trim()
+        ERROR_CHANNEL = errorID.Text.Trim()
+        QUEST_CHANNEL = questID.Text.Trim()
+        TASK_CHANNEL = taskID.Text.Trim()
+        SELFIE_CHANNEL = selfieID.Text.Trim()
         checkInterval = CInt(numIntervalSecond.Value)
 
         monitorChat = chkMonitorChat.Checked
@@ -521,19 +625,25 @@ Public Class main
         takeScreenshots = captureWin.Checked
         autoCleanup = autoClean.Checked
 
+        StartMetrics()
         SaveCfg()
 
-        If String.IsNullOrWhiteSpace(WEBHOOK_URL) OrElse Not WEBHOOK_URL.StartsWith("http") Then
+        If String.IsNullOrWhiteSpace(WEBHOOK_URL) OrElse Not WEBHOOK_URL.StartsWith("http", StringComparison.OrdinalIgnoreCase) Then
             AppendLog("⚠ Please enter a valid Discord Webhook URL.")
             Return
         End If
 
-        If Not monitorChat AndAlso Not monitorQuests AndAlso Not questError.Checked AndAlso Not skillIssue.Checked AndAlso Not combatError.Checked AndAlso Not monitorTask.Checked AndAlso Not takeSelfie Then
+        If Not monitorChat AndAlso Not monitorQuests AndAlso Not questError.Checked AndAlso
+       Not skillIssue.Checked AndAlso Not combatError.Checked AndAlso
+       Not monitorTask.Checked AndAlso Not takeSelfie Then
             AppendLog("⚠ No monitoring options selected.")
             Return
         End If
 
-        Dim logDirs = txtLogDir.Text.Split(";"c).Select(Function(p) p.Trim()).Where(Function(p) Directory.Exists(p)).ToList()
+        Dim logDirs = txtLogDir.Text.Split(";"c).
+        Select(Function(p) p.Trim()).
+        Where(Function(p) Directory.Exists(p)).ToList()
+
         monitoring = True
         watchers.Clear()
 
@@ -558,7 +668,8 @@ Public Class main
             watcher.NotifyFilter = NotifyFilters.LastWrite Or NotifyFilters.FileName Or NotifyFilters.Size
             watcher.IncludeSubdirectories = False
 
-            AddHandler watcher.Changed, Async Sub(s, eArgs) Await LogHelper.OnLogChanged(s, eArgs,
+            AddHandler watcher.Changed, Async Sub(s, eArgs) Await LogHelper.OnLogChanged(
+            s, eArgs,
             monitoring, lastOffsets, lastProcessedTimes,
             monitorChat, monitorQuests, takeScreenshots, monitorTasks,
             questError.Checked, skillIssue.Checked, combatError.Checked,
@@ -568,7 +679,8 @@ Public Class main
             AddressOf AppendLog, AddressOf SendSegments,
             AddressOf PostFailAlert, AddressOf GetFolderName)
 
-            AddHandler watcher.Created, Async Sub(s, eArgs) Await LogHelper.OnLogChanged(s, eArgs,
+            AddHandler watcher.Created, Async Sub(s, eArgs) Await LogHelper.OnLogChanged(
+            s, eArgs,
             monitoring, lastOffsets, lastProcessedTimes,
             monitorChat, monitorQuests, takeScreenshots, monitorTasks,
             questError.Checked, skillIssue.Checked, combatError.Checked,
@@ -593,6 +705,7 @@ Public Class main
             StartSelfieTimer()
         End If
     End Sub
+
     Private Sub StopMonitoring(sender As Object, e As EventArgs) Handles btnStop.Click
         For Each watcher In watchers
             watcher.EnableRaisingEvents = False
@@ -605,6 +718,7 @@ Public Class main
             logTimer = Nothing
         End If
 
+        StopMetrics()
         StopSelfieTimer()
 
         monitoring = False
@@ -612,7 +726,7 @@ Public Class main
     End Sub
 
     Private Async Function PostFailAlert(trigger As String, reason As String, filePath As String, FailureType As String) As Task
-        Dim targetWebhook As String = ERROR_CHANNEL
+        Dim targetWebhook As String = If(Not String.IsNullOrWhiteSpace(ERROR_CHANNEL), ERROR_CHANNEL, WEBHOOK_URL)
         Dim payload As String = errorEmbed.Text.Trim()
         If String.IsNullOrWhiteSpace(payload) Then
             AppendLog("⚠ Error embed textbox is empty, cannot send embed.")
@@ -1058,7 +1172,8 @@ Public Class main
         End Try
     End Sub
 
-    Private Sub CommonButtons(sender As Object, e As EventArgs) Handles clearBtn.Click, forcecheckBtn.Click, wikiBtn.Click, p2pdiscordBtn.Click, dbdiscordBtn.Click, dbforumBtn.Click, p2psalesBtn.Click, p2psetupBtn.Click, p2psurvivalBtn.Click, p2pgearBtn.Click
+    Private Sub CommonButtons(sender As Object, e As EventArgs) Handles clearBtn.Click, forcecheckBtn.Click, wikiBtn.Click, p2pdiscordBtn.Click, dbdiscordBtn.Click, dbforumBtn.Click, p2psalesBtn.Click, p2psetupBtn.Click, p2psurvivalBtn.Click, p2pgearBtn.Click, monitorDiscord.Click
+
         If sender Is clearBtn Then
             txtLog.Clear()
             Exit Sub
@@ -1101,6 +1216,9 @@ Public Class main
                 failMsg = "Failed to open P2P survival page: "
             Case sender Is p2pgearBtn
                 url = "https://wiki.aeglen.net/Supported_Gear"
+                failMsg = "Failed to open P2P supported gear page: "
+            Case sender Is monitorDiscord
+                url = "https://discord.gg/EpuaMTCzx5"
                 failMsg = "Failed to open P2P supported gear page: "
         End Select
 

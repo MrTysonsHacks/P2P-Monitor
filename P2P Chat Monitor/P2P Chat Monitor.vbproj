@@ -12,9 +12,9 @@
     <Authors>$(Company)</Authors>
     <Copyright>© CaS5 2025</Copyright>
     <PackageIcon>25614895.png</PackageIcon>
-    <FileVersion>1.3.3</FileVersion>
-    <AssemblyVersion>1.3.3</AssemblyVersion>
-    <Version>1.3.3</Version>
+    <FileVersion>1.3.5</FileVersion>
+    <AssemblyVersion>1.3.5</AssemblyVersion>
+    <Version>1.3.5</Version>
     <Description>A monitor for Aeglen's P2P Master AI that reports to specified Discord webhook</Description>
   </PropertyGroup>
 

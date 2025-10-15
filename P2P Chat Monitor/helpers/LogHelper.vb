@@ -393,26 +393,6 @@ Public Class LogHelper
         For i As Integer = 0 To arr.Count - 1
             Dim line As String = arr(i)
 
-            If line.IndexOf("Task is doable with this style", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
-           line.IndexOf("Task is NOT doable with this style", StringComparison.OrdinalIgnoreCase) >= 0 Then
-
-                Dim taskName As String = "Slayer"
-                Dim activity As String = ""
-
-                Dim startIdx As Integer = Math.Max(0, i - 25)
-                Dim endIdx As Integer = Math.Min(arr.Count - 1, i + 25)
-
-                For j As Integer = startIdx To endIdx
-                    If arr(j).IndexOf("Slayer ->", StringComparison.OrdinalIgnoreCase) >= 0 Then
-                        activity = Regex.Replace(arr(j), ".*Slayer\s*->\s*", "", RegexOptions.IgnoreCase).Trim()
-                        Exit For
-                    End If
-                Next
-
-                result.Add(New List(Of String) From {taskName, activity})
-                Continue For
-            End If
-
             If line.IndexOf("BREAK START", StringComparison.OrdinalIgnoreCase) >= 0 Then
                 Dim taskName As String = "Break"
                 Dim activity As String = ""
@@ -451,14 +431,23 @@ Public Class LogHelper
                 Dim genericActivity As String = Nothing
                 Dim slayerArrow As String = Nothing
 
+                Dim stripPrefix As Func(Of String, String) =
+                Function(s As String) Regex.Replace(s, "^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\[[A-Z]+\]\s*>?\s*", "", RegexOptions.IgnoreCase)
+
                 For j As Integer = i + 1 To maxJ
                     Dim inner As String = arr(j)
+                    Dim body As String = stripPrefix(inner)
+                    Dim bodyTrim As String = body.Trim()
 
-                    If inner.IndexOf("Actually task is", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    If Regex.IsMatch(bodyTrim, "^Task is(?:\s+NOT)?\s+doable with this style$", RegexOptions.IgnoreCase) Then
+                        Continue For
+                    End If
+
+                    If body.StartsWith("Actually task is", StringComparison.OrdinalIgnoreCase) Then
                         actualTask = inner
-                    ElseIf inner.IndexOf("Task is", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    ElseIf Regex.IsMatch(body, "^(?<!Previous\s)Task is\b(?!\s+(?:NOT\s+)?doable with this style\b)", RegexOptions.IgnoreCase) Then
                         normalTask = inner
-                    ElseIf inner.IndexOf("Activity is", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    ElseIf body.StartsWith("Activity is", StringComparison.OrdinalIgnoreCase) Then
                         genericActivity = inner
                     ElseIf inner.IndexOf("Slayer ->", StringComparison.OrdinalIgnoreCase) >= 0 Then
                         slayerArrow = inner
@@ -467,16 +456,16 @@ Public Class LogHelper
 
                 Dim taskName As String = ""
                 If Not String.IsNullOrEmpty(actualTask) Then
-                    taskName = Regex.Replace(actualTask, ".*Actually task is\s*", "", RegexOptions.IgnoreCase).Trim()
+                    taskName = Regex.Replace(stripPrefix(actualTask), "^Actually task is\s*", "", RegexOptions.IgnoreCase).Trim()
                 ElseIf Not String.IsNullOrEmpty(normalTask) Then
-                    taskName = Regex.Replace(normalTask, ".*Task is\s*", "", RegexOptions.IgnoreCase).Trim()
+                    taskName = Regex.Replace(stripPrefix(normalTask), "^Task is\s*", "", RegexOptions.IgnoreCase).Trim()
                 End If
 
                 Dim activity As String = ""
                 If Not String.IsNullOrEmpty(slayerArrow) Then
                     activity = Regex.Replace(slayerArrow, ".*Slayer\s*->\s*", "", RegexOptions.IgnoreCase).Trim()
                 ElseIf Not String.IsNullOrEmpty(genericActivity) Then
-                    activity = Regex.Replace(genericActivity, ".*Activity is\s*", "", RegexOptions.IgnoreCase).Trim()
+                    activity = Regex.Replace(stripPrefix(genericActivity), "^Activity is\s*", "", RegexOptions.IgnoreCase).Trim()
                 End If
 
                 'really the best I can do without seeing more logs, except everyone keeps cropping their shit. Stop doing that. I'm talking to you.
@@ -500,6 +489,17 @@ Public Class LogHelper
                         End If
                     Next
                 End If
+
+                If String.IsNullOrWhiteSpace(taskName) AndAlso String.IsNullOrWhiteSpace(activity) Then
+                    Continue For
+                End If
+
+                If Regex.IsMatch(taskName, "^(?:NOT\s+)?doable with this style$", RegexOptions.IgnoreCase) Then
+                    taskName = ""
+                End If
+
+                taskName = If(taskName, "").Trim()
+                activity = If(activity, "").Trim()
 
                 result.Add(New List(Of String) From {taskName, activity})
             End If

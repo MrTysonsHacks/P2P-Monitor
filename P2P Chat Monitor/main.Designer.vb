@@ -87,6 +87,7 @@ Partial Class main
         chatEmbed = New MaterialSkin.Controls.MaterialMultiLineTextBox()
         errorEmbed = New MaterialSkin.Controls.MaterialMultiLineTextBox()
         taskEmbed = New MaterialSkin.Controls.MaterialMultiLineTextBox()
+        monitorDiscord = New MaterialSkin.Controls.MaterialButton()
         Hamburger.SuspendLayout()
         discordManagement.SuspendLayout()
         monitorManagement.SuspendLayout()
@@ -1298,10 +1299,31 @@ Partial Class main
         taskEmbed.Text = resources.GetString("taskEmbed.Text")
         taskEmbed.Visible = False
         ' 
+        ' monitorDiscord
+        ' 
+        monitorDiscord.AutoSize = False
+        monitorDiscord.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        monitorDiscord.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default
+        monitorDiscord.Depth = 0
+        monitorDiscord.HighEmphasis = True
+        monitorDiscord.Icon = Nothing
+        monitorDiscord.Location = New Point(1107, 26)
+        monitorDiscord.Margin = New Padding(4, 6, 4, 6)
+        monitorDiscord.MouseState = MaterialSkin.MouseState.HOVER
+        monitorDiscord.Name = "monitorDiscord"
+        monitorDiscord.NoAccentTextColor = Color.Empty
+        monitorDiscord.Size = New Size(222, 36)
+        monitorDiscord.TabIndex = 68
+        monitorDiscord.Text = "Monitor Support Discord"
+        monitorDiscord.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained
+        monitorDiscord.UseAccentColor = True
+        monitorDiscord.UseVisualStyleBackColor = True
+        ' 
         ' main
         ' 
         AutoScaleMode = AutoScaleMode.None
         ClientSize = New Size(1330, 732)
+        Controls.Add(monitorDiscord)
         Controls.Add(taskEmbed)
         Controls.Add(btnCheckUpdates)
         Controls.Add(clearBtn)
@@ -1324,7 +1346,7 @@ Partial Class main
         MaximizeBox = False
         Name = "main"
         Sizable = False
-        Text = "P2P Monitor v1.3.4 by CaS5"
+        Text = "P2P Monitor v1.3.5 by CaS5"
         Hamburger.ResumeLayout(False)
         discordManagement.ResumeLayout(False)
         monitorManagement.ResumeLayout(False)
@@ -1421,4 +1443,5 @@ Partial Class main
     Friend WithEvents MaterialLabel26 As MaterialSkin.Controls.MaterialLabel
     Friend WithEvents MaterialLabel25 As MaterialSkin.Controls.MaterialLabel
     Friend WithEvents obscureSS As MaterialSkin.Controls.MaterialSwitch
+    Friend WithEvents monitorDiscord As MaterialSkin.Controls.MaterialButton
 End Class
