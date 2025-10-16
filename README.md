@@ -3,7 +3,8 @@
 This is a little Windows Forms tool I put together to keep an eye on DreamBot log files and send anything interesting over to Discord. It’s mainly for tracking chat, quests, and failure events in real time.  
 The app has a Material Design style interface, saves your settings, and can even grab screenshots of the bot client if you want.
 
----
+## [P2P Monitor Discord Invite](https://discord.gg/EpuaMTCzx5)
+
 ## Download
 
 [Click Here to download the latest release!](https://github.com/MrTysonsHacks/P2P-Monitor/releases/latest)
