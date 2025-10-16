@@ -25,38 +25,50 @@ The app has a Material Design style interface, saves your settings, and can even
 
 ## Features
 
+## Features
+
 ### Log Watching
-- Watches one or more folders for `logfile-*.log` files (you can point it at multiple dirs separated with `;`).
-- Picks up:
-  - Chat activity  
-  - Quest completions  
-  - Failures (quest, skill, combat)  
-- Keeps track of where it left off so it won’t spam old entries.  
+- Monitor one or more folders for `logfile-*.log` (multiple paths supported via `;`).
+- Remembers read offsets so it never re-sends old entries.
+- Heartbeat + “jump to end” on start so only new activity is processed.
+
+### Task & Activity Detection
+- Detects **NEW TASK** blocks with priority
+- Safety checks for false positive tasks.
 
 ### Discord Integration
-- Sends events to Discord using webhooks (separate channels for chat, quests, errors if you want).  
-- Uses embed templates that you can edit yourself.  
-- Supports mentions so you get notified.  
-- Includes buttons to test your webhooks and make sure they work.  
+- Sends events via webhooks with optional per-category overrides:
+  - **Default Webhook** (global) + **Chat**, **Quest**, **Task**, **Error**, **Selfie** channels.
+- Smart fallback: if a specific channel is empty, it **falls back to Default**.
+- Editable JSON embed templates for Chat/Quest/Task/Error.
+- Mentions supported (`{mention}`), plus test buttons for quick verification.
 
-### Screenshots
-- Can auto-screenshot the DreamBot client when a chat event happens.  
-- Optionally cleans up screenshots after they’re sent.  
+### Screenshots & Selfie Mode
+- Optional **auto-screenshot** of DreamBot when events occur.
+- **Selfie mode**: periodic window capture to a dedicated channel.
+- Optional auto-cleanup of screenshots after successful send.
 
 ### Failure Detection
-- Loads regex-based triggers and reasons from a Google Sheet (so you don’t have to recompile every time you want to add something).  
-- Debug mode can send the whole log file to a debug webhook if something fails.  
+- Regex-based **quest/skill/combat** failure triggers & reasons managed in google sheets for realtime updating.
+- Dedicated error embeds (also fall back to Default when no error webhook is set).
 
-### Custom Embeds
-- JSON templates for chat/quest events and error events.  
-- Reset buttons to restore defaults if you mess them up.  
-- Placeholders like `{mention}`, `{trigger}`, `{reason}`, etc.  
+### UI / UX
+- **Minimize to tray** with tray menu (Show / Start / Stop / Exit).
+- Dark/Light theme with persistent preference.
+- Built-in log console with timestamps, clear button, and manual heartbeat.
+- Handy quick links (wiki, forums, discords, etc.).
 
-### UI / Misc
-- Dark or light mode (your choice, it remembers your setting).  
-- Built-in log console with timestamps.  
-- Handy buttons for quick links (wiki, forums, discords, etc).  
-- Clear log + force heartbeat check buttons.  
+### Reliability & Performance
+- FileSystemWatcher-based updates with debounced processing.
+- Start-up “announce latest per folder” + double sync to ensure clean state.
+- Robust guards around IO, parsing, and Discord posting.
+
+### Configuration & Persistence
+- All toggles, intervals, webhook URLs, and templates are saved to settings.
+- CLI/launcher support (via the CLI Creator) to spin up accounts with your preferred flags.
+
+### Updater
+- Built-in update check with version display so you can keep current easily.
 
 ---
 
