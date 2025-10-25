@@ -134,6 +134,10 @@ Public Class CleanLogForm
         End Try
     End Sub
 
+    Private Sub InitializeComponent()
+
+    End Sub
+
     Private Sub OnCleanClicked(sender As Object, e As EventArgs)
         Try
             Dim folder = TryCast(cmbFolders.SelectedItem, String)

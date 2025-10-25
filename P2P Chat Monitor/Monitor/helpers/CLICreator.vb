@@ -92,11 +92,12 @@ Public Module CLICreator
         Return cms
     End Function
     Public Sub GenerateBatchFile(dbPath As String,
-                                 ramValue As Integer,
-                                 covert As Boolean,
-                                 fresh As Boolean,
-                                 accounts As IEnumerable(Of String),
-                                 cliOutput As MaterialMultiLineTextBox)
+                                ramValue As Integer,
+                                covert As Boolean,
+                                fresh As Boolean,
+                                accounts As IEnumerable(Of String),
+                                cliOutput As MaterialMultiLineTextBox,
+                                launchP2P As Boolean)
 
         If String.IsNullOrWhiteSpace(dbPath) OrElse Not IO.File.Exists(dbPath) Then
             MessageBox.Show("Please select a valid .jar file.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -121,7 +122,9 @@ Public Module CLICreator
             If fresh Then args.Add("-no-fresh")
 
             args.Add("-account """ & acc & """")
-            args.Add("-script ""P2P Master AI""")
+            If launchP2P Then
+                args.Add("-script ""P2P Master AI""")
+            End If
 
             lines.Add(String.Join(" ", args))
         Next

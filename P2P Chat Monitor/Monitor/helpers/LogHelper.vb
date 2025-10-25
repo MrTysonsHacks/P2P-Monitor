@@ -131,7 +131,7 @@ Public Class LogHelper
                     If takeScreenshots Then
                         Dim logRoot As String = System.IO.Path.GetDirectoryName(path)
                         Dim perAccountDir As String = System.IO.Path.Combine(logRoot, folderName)
-                        screenshotPath = ScreenshotHelpers.SnapAndSend(path, folderName, perAccountDir, AppendLog)
+                        screenshotPath = Await ScreenshotHelpers.SnapAndSend(path, folderName, perAccountDir, AppendLog)
                         If Not String.IsNullOrWhiteSpace(screenshotPath) Then
                             AppendLog("📸 Screenshot captured.")
                         Else
@@ -151,7 +151,7 @@ Public Class LogHelper
                     If takeScreenshots Then
                         Dim logRoot As String = System.IO.Path.GetDirectoryName(path)
                         Dim perAccountDir As String = System.IO.Path.Combine(logRoot, folderName)
-                        screenshotPath = ScreenshotHelpers.SnapAndSend(path, folderName, perAccountDir, AppendLog)
+                        screenshotPath = Await ScreenshotHelpers.SnapAndSend(path, folderName, perAccountDir, AppendLog)
                         If Not String.IsNullOrWhiteSpace(screenshotPath) Then
                             AppendLog("📸 Screenshot captured.")
                         Else
@@ -175,7 +175,7 @@ Public Class LogHelper
                     If takeScreenshots Then
                         Dim logRoot As String = System.IO.Path.GetDirectoryName(path)
                         Dim perAccountDir As String = System.IO.Path.Combine(logRoot, folderName)
-                        screenshotPath = ScreenshotHelpers.SnapAndSend(path, folderName, perAccountDir, AppendLog)
+                        screenshotPath = Await ScreenshotHelpers.SnapAndSend(path, folderName, perAccountDir, AppendLog)
                         If Not String.IsNullOrWhiteSpace(screenshotPath) Then
                             AppendLog("📸 Screenshot captured.")
                         Else
@@ -335,12 +335,28 @@ Public Class LogHelper
 
     Public Shared Function SliceQuests(lines As IEnumerable(Of String)) As List(Of List(Of String))
         Dim quests As New List(Of List(Of String))()
+
         For Each line In lines
-            If line.Contains("Congratulations, you've completed a quest") Then
-                Dim cleaned = Regex.Replace(line, "<col=.*?>(.*?)</col>", "$1")
-                quests.Add(New List(Of String) From {cleaned})
+            If line.IndexOf("completed a quest", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                Dim noColor = Regex.Replace(line, "<col=.*?>(.*?)</col>", "$1", RegexOptions.IgnoreCase)
+
+                Dim body = Regex.Replace(noColor,
+                                     "^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\[[A-Z]+\]\s*(?:\[[^\]]*\]\s*)?>?\s*",
+                                     "",
+                                     RegexOptions.IgnoreCase)
+                Dim questName As String = body
+                Dim idx As Integer = questName.LastIndexOf(":"c)
+                If idx >= 0 AndAlso idx < questName.Length - 1 Then
+                    questName = questName.Substring(idx + 1)
+                End If
+                questName = questName.Trim()
+
+                If questName.Length > 0 Then
+                    quests.Add(New List(Of String) From {questName})
+                End If
             End If
         Next
+
         Return quests
     End Function
 

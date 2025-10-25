@@ -40,22 +40,20 @@ Partial Class main
         txtLog = New MaterialSkin.Controls.MaterialMultiLineTextBox()
         Hamburger = New MaterialSkin.Controls.MaterialTabControl()
         discordManagement = New TabPage()
+        dtmBtn = New MaterialSkin.Controls.MaterialButton()
+        useDTM = New MaterialSkin.Controls.MaterialCheckbox()
         selfieID = New MaterialSkin.Controls.MaterialTextBox()
-        embedEditors = New MaterialSkin.Controls.MaterialButton()
         taskID = New MaterialSkin.Controls.MaterialTextBox()
         monitorManagement = New TabPage()
+        compositorSafe = New MaterialSkin.Controls.MaterialSwitch()
         MaterialLabel26 = New MaterialSkin.Controls.MaterialLabel()
         MaterialLabel25 = New MaterialSkin.Controls.MaterialLabel()
         obscureSS = New MaterialSkin.Controls.MaterialSwitch()
         selfieMode = New MaterialSkin.Controls.MaterialSwitch()
         numSelfieInterval = New MaterialSkin.Controls.MaterialSlider()
         monitorTask = New MaterialSkin.Controls.MaterialSwitch()
-        MaterialLabel12 = New MaterialSkin.Controls.MaterialLabel()
-        MaterialLabel11 = New MaterialSkin.Controls.MaterialLabel()
         btnCleanLog = New MaterialSkin.Controls.MaterialButton()
         txtLogDir = New MaterialSkin.Controls.MaterialTextBox()
-        MaterialLabel7 = New MaterialSkin.Controls.MaterialLabel()
-        screenshotmode = New MaterialSkin.Controls.MaterialSwitch()
         helpLinks = New TabPage()
         MaterialMultiLineTextBox1 = New MaterialSkin.Controls.MaterialMultiLineTextBox()
         p2pgearBtn = New MaterialSkin.Controls.MaterialButton()
@@ -67,6 +65,7 @@ Partial Class main
         p2pdiscordBtn = New MaterialSkin.Controls.MaterialButton()
         wikiBtn = New MaterialSkin.Controls.MaterialButton()
         TabPage1 = New TabPage()
+        launchP2P = New MaterialSkin.Controls.MaterialCheckbox()
         createCLI = New MaterialSkin.Controls.MaterialButton()
         cliOutput = New MaterialSkin.Controls.MaterialMultiLineTextBox()
         txtWorld = New MaterialSkin.Controls.MaterialTextBox()
@@ -78,9 +77,9 @@ Partial Class main
         btnAddAcc = New MaterialSkin.Controls.MaterialButton()
         accountNames = New MaterialSkin.Controls.MaterialComboBox()
         ImageList1 = New ImageList(components)
+        embedEditors = New MaterialSkin.Controls.MaterialButton()
         btnCheckUpdates = New MaterialSkin.Controls.MaterialButton()
         clearBtn = New MaterialSkin.Controls.MaterialButton()
-        forcecheckBtn = New MaterialSkin.Controls.MaterialButton()
         testEmbeds = New MaterialSkin.Controls.MaterialButton()
         testBtn = New MaterialSkin.Controls.MaterialButton()
         questEmbed = New MaterialSkin.Controls.MaterialMultiLineTextBox()
@@ -88,6 +87,7 @@ Partial Class main
         errorEmbed = New MaterialSkin.Controls.MaterialMultiLineTextBox()
         taskEmbed = New MaterialSkin.Controls.MaterialMultiLineTextBox()
         monitorDiscord = New MaterialSkin.Controls.MaterialButton()
+        btnBackToMenu = New MaterialSkin.Controls.MaterialButton()
         Hamburger.SuspendLayout()
         discordManagement.SuspendLayout()
         monitorManagement.SuspendLayout()
@@ -252,7 +252,7 @@ Partial Class main
         ' 
         MaterialLabel1.AutoSize = True
         MaterialLabel1.Depth = 0
-        MaterialLabel1.Font = New Font("Roboto", 10.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        MaterialLabel1.Font = New Font("Roboto", 10F, FontStyle.Regular, GraphicsUnit.Pixel)
         MaterialLabel1.FontType = MaterialSkin.MaterialSkinManager.fontType.Overline
         MaterialLabel1.Location = New Point(880, 7)
         MaterialLabel1.MouseState = MaterialSkin.MouseState.HOVER
@@ -267,7 +267,7 @@ Partial Class main
         txtWebhook.AnimateReadOnly = False
         txtWebhook.BorderStyle = BorderStyle.None
         txtWebhook.Depth = 0
-        txtWebhook.Font = New Font("Roboto", 16.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        txtWebhook.Font = New Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel)
         txtWebhook.Hint = "Default Webhook (Required)"
         txtWebhook.LeadingIcon = Nothing
         txtWebhook.Location = New Point(6, 59)
@@ -285,7 +285,7 @@ Partial Class main
         questID.AnimateReadOnly = False
         questID.BorderStyle = BorderStyle.None
         questID.Depth = 0
-        questID.Font = New Font("Roboto", 16.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        questID.Font = New Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel)
         questID.Hint = "Quest Webhook (Optional)"
         questID.LeadingIcon = Nothing
         questID.Location = New Point(437, 59)
@@ -303,7 +303,7 @@ Partial Class main
         chatID.AnimateReadOnly = False
         chatID.BorderStyle = BorderStyle.None
         chatID.Depth = 0
-        chatID.Font = New Font("Roboto", 16.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        chatID.Font = New Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel)
         chatID.Hint = "Chat Webhook (Optional)"
         chatID.LeadingIcon = Nothing
         chatID.Location = New Point(6, 112)
@@ -321,7 +321,7 @@ Partial Class main
         txtMention.AnimateReadOnly = False
         txtMention.BorderStyle = BorderStyle.None
         txtMention.Depth = 0
-        txtMention.Font = New Font("Roboto", 16.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        txtMention.Font = New Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel)
         txtMention.Hint = "Discord User ID (Optional)"
         txtMention.LeadingIcon = Nothing
         txtMention.Location = New Point(6, 6)
@@ -339,7 +339,7 @@ Partial Class main
         errorID.AnimateReadOnly = False
         errorID.BorderStyle = BorderStyle.None
         errorID.Depth = 0
-        errorID.Font = New Font("Roboto", 16.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        errorID.Font = New Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel)
         errorID.Hint = "Error Webhook (Optional)"
         errorID.LeadingIcon = Nothing
         errorID.Location = New Point(437, 6)
@@ -402,7 +402,7 @@ Partial Class main
         txtLog.BackColor = Color.FromArgb(CByte(255), CByte(255), CByte(255))
         txtLog.BorderStyle = BorderStyle.None
         txtLog.Depth = 0
-        txtLog.Font = New Font("Roboto", 14.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        txtLog.Font = New Font("Roboto", 14F, FontStyle.Regular, GraphicsUnit.Pixel)
         txtLog.ForeColor = Color.FromArgb(CByte(222), CByte(0), CByte(0), CByte(0))
         txtLog.Location = New Point(185, 284)
         txtLog.MouseState = MaterialSkin.MouseState.HOVER
@@ -431,8 +431,9 @@ Partial Class main
         ' 
         ' discordManagement
         ' 
+        discordManagement.Controls.Add(dtmBtn)
+        discordManagement.Controls.Add(useDTM)
         discordManagement.Controls.Add(selfieID)
-        discordManagement.Controls.Add(embedEditors)
         discordManagement.Controls.Add(taskID)
         discordManagement.Controls.Add(errorID)
         discordManagement.Controls.Add(questID)
@@ -448,12 +449,49 @@ Partial Class main
         discordManagement.Text = "Discord Management"
         discordManagement.UseVisualStyleBackColor = True
         ' 
+        ' dtmBtn
+        ' 
+        dtmBtn.AutoSize = False
+        dtmBtn.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        dtmBtn.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default
+        dtmBtn.Depth = 0
+        dtmBtn.HighEmphasis = True
+        dtmBtn.Icon = Nothing
+        dtmBtn.Location = New Point(879, 118)
+        dtmBtn.Margin = New Padding(4, 6, 4, 6)
+        dtmBtn.MouseState = MaterialSkin.MouseState.HOVER
+        dtmBtn.Name = "dtmBtn"
+        dtmBtn.NoAccentTextColor = Color.Empty
+        dtmBtn.Size = New Size(265, 36)
+        dtmBtn.TabIndex = 71
+        dtmBtn.Text = "Discord Thread Manager [Beta]"
+        dtmBtn.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained
+        dtmBtn.UseAccentColor = False
+        dtmBtn.UseVisualStyleBackColor = True
+        dtmBtn.Visible = False
+        ' 
+        ' useDTM
+        ' 
+        useDTM.AutoSize = True
+        useDTM.Depth = 0
+        useDTM.Location = New Point(875, 64)
+        useDTM.Margin = New Padding(0)
+        useDTM.MouseLocation = New Point(-1, -1)
+        useDTM.MouseState = MaterialSkin.MouseState.HOVER
+        useDTM.Name = "useDTM"
+        useDTM.ReadOnly = False
+        useDTM.Ripple = True
+        useDTM.Size = New Size(181, 37)
+        useDTM.TabIndex = 70
+        useDTM.Text = "Use Discord Threads"
+        useDTM.UseVisualStyleBackColor = True
+        ' 
         ' selfieID
         ' 
         selfieID.AnimateReadOnly = False
         selfieID.BorderStyle = BorderStyle.None
         selfieID.Depth = 0
-        selfieID.Font = New Font("Roboto", 16.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        selfieID.Font = New Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel)
         selfieID.Hint = "Selfie Webhook (Optional)"
         selfieID.LeadingIcon = Nothing
         selfieID.Location = New Point(879, 6)
@@ -466,33 +504,12 @@ Partial Class main
         selfieID.Text = ""
         selfieID.TrailingIcon = Nothing
         ' 
-        ' embedEditors
-        ' 
-        embedEditors.AutoSize = False
-        embedEditors.AutoSizeMode = AutoSizeMode.GrowAndShrink
-        embedEditors.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default
-        embedEditors.Depth = 0
-        embedEditors.HighEmphasis = True
-        embedEditors.Icon = Nothing
-        embedEditors.Location = New Point(985, 116)
-        embedEditors.Margin = New Padding(4, 6, 4, 6)
-        embedEditors.MouseState = MaterialSkin.MouseState.HOVER
-        embedEditors.Name = "embedEditors"
-        embedEditors.NoAccentTextColor = Color.Empty
-        embedEditors.RightToLeft = RightToLeft.Yes
-        embedEditors.Size = New Size(227, 36)
-        embedEditors.TabIndex = 68
-        embedEditors.Text = "Embed Editor"
-        embedEditors.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained
-        embedEditors.UseAccentColor = False
-        embedEditors.UseVisualStyleBackColor = True
-        ' 
         ' taskID
         ' 
         taskID.AnimateReadOnly = False
         taskID.BorderStyle = BorderStyle.None
         taskID.Depth = 0
-        taskID.Font = New Font("Roboto", 16.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        taskID.Font = New Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel)
         taskID.Hint = "Task Webhook (Optional)"
         taskID.LeadingIcon = Nothing
         taskID.Location = New Point(437, 112)
@@ -507,19 +524,16 @@ Partial Class main
         ' 
         ' monitorManagement
         ' 
+        monitorManagement.Controls.Add(compositorSafe)
         monitorManagement.Controls.Add(MaterialLabel26)
         monitorManagement.Controls.Add(MaterialLabel25)
         monitorManagement.Controls.Add(obscureSS)
         monitorManagement.Controls.Add(selfieMode)
         monitorManagement.Controls.Add(numSelfieInterval)
         monitorManagement.Controls.Add(monitorTask)
-        monitorManagement.Controls.Add(MaterialLabel12)
-        monitorManagement.Controls.Add(MaterialLabel11)
         monitorManagement.Controls.Add(btnCleanLog)
         monitorManagement.Controls.Add(txtLogDir)
         monitorManagement.Controls.Add(btnBrowseLogDir)
-        monitorManagement.Controls.Add(MaterialLabel7)
-        monitorManagement.Controls.Add(screenshotmode)
         monitorManagement.Controls.Add(chkMonitorChat)
         monitorManagement.Controls.Add(numIntervalSecond)
         monitorManagement.Controls.Add(monitorQuest)
@@ -539,11 +553,26 @@ Partial Class main
         monitorManagement.Text = "Monitor Management"
         monitorManagement.UseVisualStyleBackColor = True
         ' 
+        ' compositorSafe
+        ' 
+        compositorSafe.AutoSize = True
+        compositorSafe.Depth = 0
+        compositorSafe.Location = New Point(538, 86)
+        compositorSafe.Margin = New Padding(0)
+        compositorSafe.MouseLocation = New Point(-1, -1)
+        compositorSafe.MouseState = MaterialSkin.MouseState.HOVER
+        compositorSafe.Name = "compositorSafe"
+        compositorSafe.Ripple = True
+        compositorSafe.Size = New Size(304, 37)
+        compositorSafe.TabIndex = 80
+        compositorSafe.Text = "Screenshot Compositor Safe-Mode"
+        compositorSafe.UseVisualStyleBackColor = True
+        ' 
         ' MaterialLabel26
         ' 
         MaterialLabel26.AutoSize = True
         MaterialLabel26.Depth = 0
-        MaterialLabel26.Font = New Font("Roboto", 10.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        MaterialLabel26.Font = New Font("Roboto", 10F, FontStyle.Regular, GraphicsUnit.Pixel)
         MaterialLabel26.FontType = MaterialSkin.MaterialSkinManager.fontType.Overline
         MaterialLabel26.Location = New Point(550, 62)
         MaterialLabel26.MouseState = MaterialSkin.MouseState.HOVER
@@ -557,7 +586,7 @@ Partial Class main
         ' 
         MaterialLabel25.AutoSize = True
         MaterialLabel25.Depth = 0
-        MaterialLabel25.Font = New Font("Roboto", 10.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        MaterialLabel25.Font = New Font("Roboto", 10F, FontStyle.Regular, GraphicsUnit.Pixel)
         MaterialLabel25.FontType = MaterialSkin.MaterialSkinManager.fontType.Overline
         MaterialLabel25.Location = New Point(550, 49)
         MaterialLabel25.MouseState = MaterialSkin.MouseState.HOVER
@@ -627,34 +656,6 @@ Partial Class main
         monitorTask.Text = "Monitor Tasks"
         monitorTask.UseVisualStyleBackColor = True
         ' 
-        ' MaterialLabel12
-        ' 
-        MaterialLabel12.AutoSize = True
-        MaterialLabel12.Depth = 0
-        MaterialLabel12.Font = New Font("Roboto", 10.0F, FontStyle.Regular, GraphicsUnit.Pixel)
-        MaterialLabel12.FontType = MaterialSkin.MaterialSkinManager.fontType.Overline
-        MaterialLabel12.Location = New Point(550, 149)
-        MaterialLabel12.MouseState = MaterialSkin.MouseState.HOVER
-        MaterialLabel12.Name = "MaterialLabel12"
-        MaterialLabel12.Size = New Size(185, 13)
-        MaterialLabel12.TabIndex = 73
-        MaterialLabel12.Text = "in-game screenshots taken by the monitor"
-        MaterialLabel12.UseAccent = True
-        ' 
-        ' MaterialLabel11
-        ' 
-        MaterialLabel11.AutoSize = True
-        MaterialLabel11.Depth = 0
-        MaterialLabel11.Font = New Font("Roboto", 10.0F, FontStyle.Regular, GraphicsUnit.Pixel)
-        MaterialLabel11.FontType = MaterialSkin.MaterialSkinManager.fontType.Overline
-        MaterialLabel11.Location = New Point(550, 136)
-        MaterialLabel11.MouseState = MaterialSkin.MouseState.HOVER
-        MaterialLabel11.Name = "MaterialLabel11"
-        MaterialLabel11.Size = New Size(212, 13)
-        MaterialLabel11.TabIndex = 72
-        MaterialLabel11.Text = "screenshots of the monitor, this does not effect" & vbCrLf
-        MaterialLabel11.UseAccent = True
-        ' 
         ' btnCleanLog
         ' 
         btnCleanLog.AutoSize = False
@@ -680,7 +681,7 @@ Partial Class main
         txtLogDir.AnimateReadOnly = False
         txtLogDir.BorderStyle = BorderStyle.None
         txtLogDir.Depth = 0
-        txtLogDir.Font = New Font("Roboto", 16.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        txtLogDir.Font = New Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel)
         txtLogDir.LeadingIcon = Nothing
         txtLogDir.Location = New Point(915, 99)
         txtLogDir.MaxLength = 50
@@ -691,35 +692,6 @@ Partial Class main
         txtLogDir.TabIndex = 52
         txtLogDir.Text = ""
         txtLogDir.TrailingIcon = Nothing
-        ' 
-        ' MaterialLabel7
-        ' 
-        MaterialLabel7.AutoSize = True
-        MaterialLabel7.Depth = 0
-        MaterialLabel7.Font = New Font("Roboto", 10.0F, FontStyle.Regular, GraphicsUnit.Pixel)
-        MaterialLabel7.FontType = MaterialSkin.MaterialSkinManager.fontType.Overline
-        MaterialLabel7.Location = New Point(550, 123)
-        MaterialLabel7.MouseState = MaterialSkin.MouseState.HOVER
-        MaterialLabel7.Name = "MaterialLabel7"
-        MaterialLabel7.Size = New Size(196, 13)
-        MaterialLabel7.TabIndex = 51
-        MaterialLabel7.Text = "Hides all important information in monitor for"
-        MaterialLabel7.UseAccent = True
-        ' 
-        ' screenshotmode
-        ' 
-        screenshotmode.AutoSize = True
-        screenshotmode.Depth = 0
-        screenshotmode.Location = New Point(538, 86)
-        screenshotmode.Margin = New Padding(0)
-        screenshotmode.MouseLocation = New Point(-1, -1)
-        screenshotmode.MouseState = MaterialSkin.MouseState.HOVER
-        screenshotmode.Name = "screenshotmode"
-        screenshotmode.Ripple = True
-        screenshotmode.Size = New Size(267, 37)
-        screenshotmode.TabIndex = 50
-        screenshotmode.Text = "In-Monitor Sreenshot Obscure"
-        screenshotmode.UseVisualStyleBackColor = True
         ' 
         ' helpLinks
         ' 
@@ -918,6 +890,7 @@ Partial Class main
         ' 
         ' TabPage1
         ' 
+        TabPage1.Controls.Add(launchP2P)
         TabPage1.Controls.Add(createCLI)
         TabPage1.Controls.Add(cliOutput)
         TabPage1.Controls.Add(txtWorld)
@@ -937,6 +910,22 @@ Partial Class main
         TabPage1.TabIndex = 3
         TabPage1.Text = "CLI Creator [Beta]"
         TabPage1.UseVisualStyleBackColor = True
+        ' 
+        ' launchP2P
+        ' 
+        launchP2P.AutoSize = True
+        launchP2P.Depth = 0
+        launchP2P.Location = New Point(377, 69)
+        launchP2P.Margin = New Padding(0)
+        launchP2P.MouseLocation = New Point(-1, -1)
+        launchP2P.MouseState = MaterialSkin.MouseState.HOVER
+        launchP2P.Name = "launchP2P"
+        launchP2P.ReadOnly = False
+        launchP2P.Ripple = True
+        launchP2P.Size = New Size(166, 37)
+        launchP2P.TabIndex = 10
+        launchP2P.Text = "Launch P2P Script"
+        launchP2P.UseVisualStyleBackColor = True
         ' 
         ' createCLI
         ' 
@@ -963,7 +952,7 @@ Partial Class main
         cliOutput.BackColor = Color.FromArgb(CByte(255), CByte(255), CByte(255))
         cliOutput.BorderStyle = BorderStyle.None
         cliOutput.Depth = 0
-        cliOutput.Font = New Font("Roboto", 14.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        cliOutput.Font = New Font("Roboto", 14F, FontStyle.Regular, GraphicsUnit.Pixel)
         cliOutput.ForeColor = Color.FromArgb(CByte(222), CByte(0), CByte(0), CByte(0))
         cliOutput.Hint = "Output"
         cliOutput.Location = New Point(633, 6)
@@ -980,7 +969,7 @@ Partial Class main
         txtWorld.BorderStyle = BorderStyle.None
         txtWorld.Depth = 0
         txtWorld.Enabled = False
-        txtWorld.Font = New Font("Roboto", 16.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        txtWorld.Font = New Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel)
         txtWorld.Hint = "Default World (Optional)"
         txtWorld.LeadingIcon = Nothing
         txtWorld.Location = New Point(6, 117)
@@ -998,7 +987,7 @@ Partial Class main
         ' 
         freshStart.AutoSize = True
         freshStart.Depth = 0
-        freshStart.Location = New Point(503, 64)
+        freshStart.Location = New Point(515, 37)
         freshStart.Margin = New Padding(0)
         freshStart.MouseLocation = New Point(-1, -1)
         freshStart.MouseState = MaterialSkin.MouseState.HOVER
@@ -1014,7 +1003,7 @@ Partial Class main
         ' 
         covertMode.AutoSize = True
         covertMode.Depth = 0
-        covertMode.Location = New Point(377, 64)
+        covertMode.Location = New Point(377, 37)
         covertMode.Margin = New Padding(0)
         covertMode.MouseLocation = New Point(-1, -1)
         covertMode.MouseState = MaterialSkin.MouseState.HOVER
@@ -1029,7 +1018,7 @@ Partial Class main
         ' ramNum
         ' 
         ramNum.Depth = 0
-        ramNum.Font = New Font("Roboto", 14.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        ramNum.Font = New Font("Roboto", 14F, FontStyle.Regular, GraphicsUnit.Pixel)
         ramNum.ForeColor = Color.FromArgb(CByte(222), CByte(0), CByte(0), CByte(0))
         ramNum.Location = New Point(377, 6)
         ramNum.MouseState = MaterialSkin.MouseState.HOVER
@@ -1069,8 +1058,8 @@ Partial Class main
         dbPath.AnimateReadOnly = False
         dbPath.BorderStyle = BorderStyle.None
         dbPath.Depth = 0
-        dbPath.Font = New Font("Roboto", 16.0F, FontStyle.Regular, GraphicsUnit.Pixel)
-        dbPath.Hint = "Dreambot Path"
+        dbPath.Font = New Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel)
+        dbPath.Hint = "Dreambot Launcher.jar Path"
         dbPath.LeadingIcon = Nothing
         dbPath.Location = New Point(6, 61)
         dbPath.MaxLength = 50
@@ -1112,10 +1101,10 @@ Partial Class main
         accountNames.DropDownHeight = 174
         accountNames.DropDownStyle = ComboBoxStyle.DropDownList
         accountNames.DropDownWidth = 121
-        accountNames.Font = New Font("Roboto Medium", 14.0F, FontStyle.Bold, GraphicsUnit.Pixel)
+        accountNames.Font = New Font("Roboto Medium", 14F, FontStyle.Bold, GraphicsUnit.Pixel)
         accountNames.ForeColor = Color.FromArgb(CByte(222), CByte(0), CByte(0), CByte(0))
         accountNames.FormattingEnabled = True
-        accountNames.Hint = "DB Account Manager Nicknames"
+        accountNames.Hint = "Dreambot Account Manager Nicknames"
         accountNames.IntegralHeight = False
         accountNames.ItemHeight = 43
         accountNames.Location = New Point(6, 6)
@@ -1137,6 +1126,27 @@ Partial Class main
         ImageList1.Images.SetKeyName(2, "monitoring.png")
         ImageList1.Images.SetKeyName(3, "discord.png")
         ' 
+        ' embedEditors
+        ' 
+        embedEditors.AutoSize = False
+        embedEditors.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        embedEditors.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default
+        embedEditors.Depth = 0
+        embedEditors.HighEmphasis = True
+        embedEditors.Icon = Nothing
+        embedEditors.Location = New Point(10, 476)
+        embedEditors.Margin = New Padding(4, 6, 4, 6)
+        embedEditors.MouseState = MaterialSkin.MouseState.HOVER
+        embedEditors.Name = "embedEditors"
+        embedEditors.NoAccentTextColor = Color.Empty
+        embedEditors.RightToLeft = RightToLeft.Yes
+        embedEditors.Size = New Size(168, 36)
+        embedEditors.TabIndex = 68
+        embedEditors.Text = "Embed Editor"
+        embedEditors.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained
+        embedEditors.UseAccentColor = False
+        embedEditors.UseVisualStyleBackColor = True
+        ' 
         ' btnCheckUpdates
         ' 
         btnCheckUpdates.AutoSize = False
@@ -1145,7 +1155,7 @@ Partial Class main
         btnCheckUpdates.Depth = 0
         btnCheckUpdates.HighEmphasis = True
         btnCheckUpdates.Icon = Nothing
-        btnCheckUpdates.Location = New Point(10, 639)
+        btnCheckUpdates.Location = New Point(10, 524)
         btnCheckUpdates.Margin = New Padding(4, 6, 4, 6)
         btnCheckUpdates.MouseState = MaterialSkin.MouseState.HOVER
         btnCheckUpdates.Name = "btnCheckUpdates"
@@ -1165,7 +1175,7 @@ Partial Class main
         clearBtn.Depth = 0
         clearBtn.HighEmphasis = True
         clearBtn.Icon = Nothing
-        clearBtn.Location = New Point(10, 687)
+        clearBtn.Location = New Point(10, 572)
         clearBtn.Margin = New Padding(4, 6, 4, 6)
         clearBtn.MouseState = MaterialSkin.MouseState.HOVER
         clearBtn.Name = "clearBtn"
@@ -1177,26 +1187,6 @@ Partial Class main
         clearBtn.UseAccentColor = False
         clearBtn.UseVisualStyleBackColor = True
         ' 
-        ' forcecheckBtn
-        ' 
-        forcecheckBtn.AutoSize = False
-        forcecheckBtn.AutoSizeMode = AutoSizeMode.GrowAndShrink
-        forcecheckBtn.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default
-        forcecheckBtn.Depth = 0
-        forcecheckBtn.HighEmphasis = True
-        forcecheckBtn.Icon = Nothing
-        forcecheckBtn.Location = New Point(10, 380)
-        forcecheckBtn.Margin = New Padding(4, 6, 4, 6)
-        forcecheckBtn.MouseState = MaterialSkin.MouseState.HOVER
-        forcecheckBtn.Name = "forcecheckBtn"
-        forcecheckBtn.NoAccentTextColor = Color.Empty
-        forcecheckBtn.Size = New Size(168, 36)
-        forcecheckBtn.TabIndex = 60
-        forcecheckBtn.Text = "Force Check"
-        forcecheckBtn.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained
-        forcecheckBtn.UseAccentColor = False
-        forcecheckBtn.UseVisualStyleBackColor = True
-        ' 
         ' testEmbeds
         ' 
         testEmbeds.AutoSize = False
@@ -1205,7 +1195,7 @@ Partial Class main
         testEmbeds.Depth = 0
         testEmbeds.HighEmphasis = True
         testEmbeds.Icon = Nothing
-        testEmbeds.Location = New Point(10, 476)
+        testEmbeds.Location = New Point(10, 428)
         testEmbeds.Margin = New Padding(4, 6, 4, 6)
         testEmbeds.MouseState = MaterialSkin.MouseState.HOVER
         testEmbeds.Name = "testEmbeds"
@@ -1226,7 +1216,7 @@ Partial Class main
         testBtn.Depth = 0
         testBtn.HighEmphasis = True
         testBtn.Icon = Nothing
-        testBtn.Location = New Point(10, 428)
+        testBtn.Location = New Point(10, 380)
         testBtn.Margin = New Padding(4, 6, 4, 6)
         testBtn.MouseState = MaterialSkin.MouseState.HOVER
         testBtn.Name = "testBtn"
@@ -1244,9 +1234,9 @@ Partial Class main
         questEmbed.BackColor = Color.FromArgb(CByte(255), CByte(255), CByte(255))
         questEmbed.BorderStyle = BorderStyle.None
         questEmbed.Depth = 0
-        questEmbed.Font = New Font("Roboto", 14.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        questEmbed.Font = New Font("Roboto", 10.5F)
         questEmbed.ForeColor = Color.FromArgb(CByte(222), CByte(0), CByte(0), CByte(0))
-        questEmbed.Location = New Point(48, 620)
+        questEmbed.Location = New Point(1214, 297)
         questEmbed.MouseState = MaterialSkin.MouseState.HOVER
         questEmbed.Name = "questEmbed"
         questEmbed.Size = New Size(12, 10)
@@ -1259,9 +1249,9 @@ Partial Class main
         chatEmbed.BackColor = Color.FromArgb(CByte(255), CByte(255), CByte(255))
         chatEmbed.BorderStyle = BorderStyle.None
         chatEmbed.Depth = 0
-        chatEmbed.Font = New Font("Roboto", 14.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        chatEmbed.Font = New Font("Roboto", 10.5F)
         chatEmbed.ForeColor = Color.FromArgb(CByte(222), CByte(0), CByte(0), CByte(0))
-        chatEmbed.Location = New Point(28, 620)
+        chatEmbed.Location = New Point(1194, 297)
         chatEmbed.MouseState = MaterialSkin.MouseState.HOVER
         chatEmbed.Name = "chatEmbed"
         chatEmbed.Size = New Size(12, 10)
@@ -1274,9 +1264,9 @@ Partial Class main
         errorEmbed.BackColor = Color.FromArgb(CByte(255), CByte(255), CByte(255))
         errorEmbed.BorderStyle = BorderStyle.None
         errorEmbed.Depth = 0
-        errorEmbed.Font = New Font("Roboto", 14.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        errorEmbed.Font = New Font("Roboto", 10.5F)
         errorEmbed.ForeColor = Color.FromArgb(CByte(222), CByte(0), CByte(0), CByte(0))
-        errorEmbed.Location = New Point(10, 620)
+        errorEmbed.Location = New Point(1176, 297)
         errorEmbed.MouseState = MaterialSkin.MouseState.HOVER
         errorEmbed.Name = "errorEmbed"
         errorEmbed.Size = New Size(12, 10)
@@ -1289,9 +1279,9 @@ Partial Class main
         taskEmbed.BackColor = Color.FromArgb(CByte(255), CByte(255), CByte(255))
         taskEmbed.BorderStyle = BorderStyle.None
         taskEmbed.Depth = 0
-        taskEmbed.Font = New Font("Roboto", 14.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        taskEmbed.Font = New Font("Roboto", 10.5F)
         taskEmbed.ForeColor = Color.FromArgb(CByte(222), CByte(0), CByte(0), CByte(0))
-        taskEmbed.Location = New Point(66, 620)
+        taskEmbed.Location = New Point(1232, 297)
         taskEmbed.MouseState = MaterialSkin.MouseState.HOVER
         taskEmbed.Name = "taskEmbed"
         taskEmbed.Size = New Size(12, 10)
@@ -1307,25 +1297,47 @@ Partial Class main
         monitorDiscord.Depth = 0
         monitorDiscord.HighEmphasis = True
         monitorDiscord.Icon = Nothing
-        monitorDiscord.Location = New Point(1107, 26)
+        monitorDiscord.Location = New Point(10, 687)
         monitorDiscord.Margin = New Padding(4, 6, 4, 6)
         monitorDiscord.MouseState = MaterialSkin.MouseState.HOVER
         monitorDiscord.Name = "monitorDiscord"
         monitorDiscord.NoAccentTextColor = Color.Empty
-        monitorDiscord.Size = New Size(222, 36)
+        monitorDiscord.Size = New Size(168, 36)
         monitorDiscord.TabIndex = 68
-        monitorDiscord.Text = "Monitor Support Discord"
+        monitorDiscord.Text = "Join Monitor Discord"
         monitorDiscord.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained
         monitorDiscord.UseAccentColor = True
         monitorDiscord.UseVisualStyleBackColor = True
+        ' 
+        ' btnBackToMenu
+        ' 
+        btnBackToMenu.AutoSize = False
+        btnBackToMenu.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        btnBackToMenu.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default
+        btnBackToMenu.Depth = 0
+        btnBackToMenu.HighEmphasis = True
+        btnBackToMenu.Icon = Nothing
+        btnBackToMenu.Location = New Point(10, 639)
+        btnBackToMenu.Margin = New Padding(4, 6, 4, 6)
+        btnBackToMenu.MouseState = MaterialSkin.MouseState.HOVER
+        btnBackToMenu.Name = "btnBackToMenu"
+        btnBackToMenu.NoAccentTextColor = Color.Empty
+        btnBackToMenu.Size = New Size(168, 36)
+        btnBackToMenu.TabIndex = 69
+        btnBackToMenu.Text = "Main Menu"
+        btnBackToMenu.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained
+        btnBackToMenu.UseAccentColor = False
+        btnBackToMenu.UseVisualStyleBackColor = True
         ' 
         ' main
         ' 
         AutoScaleMode = AutoScaleMode.None
         ClientSize = New Size(1330, 732)
+        Controls.Add(btnBackToMenu)
         Controls.Add(monitorDiscord)
         Controls.Add(taskEmbed)
         Controls.Add(btnCheckUpdates)
+        Controls.Add(embedEditors)
         Controls.Add(clearBtn)
         Controls.Add(txtLog)
         Controls.Add(testEmbeds)
@@ -1334,7 +1346,6 @@ Partial Class main
         Controls.Add(testBtn)
         Controls.Add(btnStop)
         Controls.Add(chatEmbed)
-        Controls.Add(forcecheckBtn)
         Controls.Add(questEmbed)
         Controls.Add(Hamburger)
         DrawerBackgroundWithAccent = True
@@ -1346,9 +1357,10 @@ Partial Class main
         MaximizeBox = False
         Name = "main"
         Sizable = False
-        Text = "P2P Monitor v1.3.5 by CaS5"
+        Text = "P2P Monitor v1.4.0 by CaS5"
         Hamburger.ResumeLayout(False)
         discordManagement.ResumeLayout(False)
+        discordManagement.PerformLayout()
         monitorManagement.ResumeLayout(False)
         monitorManagement.PerformLayout()
         helpLinks.ResumeLayout(False)
@@ -1390,9 +1402,6 @@ Partial Class main
     Friend WithEvents p2psetupBtn As MaterialSkin.Controls.MaterialButton
     Public WithEvents ImageList1 As ImageList
     Friend WithEvents clearBtn As MaterialSkin.Controls.MaterialButton
-    Friend WithEvents forcecheckBtn As MaterialSkin.Controls.MaterialButton
-    Friend WithEvents MaterialLabel7 As MaterialSkin.Controls.MaterialLabel
-    Friend WithEvents screenshotmode As MaterialSkin.Controls.MaterialSwitch
     Friend WithEvents txtLogDir As MaterialSkin.Controls.MaterialTextBox
     Friend WithEvents testBtn As MaterialSkin.Controls.MaterialButton
     Friend WithEvents testEmbeds As MaterialSkin.Controls.MaterialButton
@@ -1402,8 +1411,6 @@ Partial Class main
     Friend WithEvents btnCheckUpdates As MaterialSkin.Controls.MaterialButton
     Friend WithEvents errorEmbed As MaterialSkin.Controls.MaterialMultiLineTextBox
     Friend WithEvents btnCleanLog As MaterialSkin.Controls.MaterialButton
-    Friend WithEvents MaterialLabel12 As MaterialSkin.Controls.MaterialLabel
-    Friend WithEvents MaterialLabel11 As MaterialSkin.Controls.MaterialLabel
     Friend WithEvents monitorTask As MaterialSkin.Controls.MaterialSwitch
     Friend WithEvents createCLI As MaterialSkin.Controls.MaterialButton
     Friend WithEvents taskEmbed As MaterialSkin.Controls.MaterialMultiLineTextBox
@@ -1444,4 +1451,9 @@ Partial Class main
     Friend WithEvents MaterialLabel25 As MaterialSkin.Controls.MaterialLabel
     Friend WithEvents obscureSS As MaterialSkin.Controls.MaterialSwitch
     Friend WithEvents monitorDiscord As MaterialSkin.Controls.MaterialButton
+    Friend WithEvents launchP2P As MaterialSkin.Controls.MaterialCheckbox
+    Friend WithEvents dtmBtn As MaterialSkin.Controls.MaterialButton
+    Friend WithEvents useDTM As MaterialSkin.Controls.MaterialCheckbox
+    Friend WithEvents compositorSafe As MaterialSkin.Controls.MaterialSwitch
+    Friend WithEvents btnBackToMenu As MaterialSkin.Controls.MaterialButton
 End Class

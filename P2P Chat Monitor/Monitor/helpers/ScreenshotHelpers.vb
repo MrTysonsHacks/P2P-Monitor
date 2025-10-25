@@ -78,6 +78,47 @@ Public Class ScreenshotHelpers
     Private Shared Function IsWindowVisible(hWnd As IntPtr) As Boolean
     End Function
 
+    <DllImport("user32.dll")>
+    Private Shared Function GetDpiForWindow(hWnd As IntPtr) As UInteger
+    End Function
+
+    <DllImport("user32.dll")>
+    Private Shared Function MonitorFromWindow(hWnd As IntPtr, dwFlags As UInteger) As IntPtr
+    End Function
+
+    <DllImport("Shcore.dll")>
+    Private Shared Function GetDpiForMonitor(hmonitor As IntPtr, dpiType As Integer, ByRef dpiX As UInteger, ByRef dpiY As UInteger) As Integer
+    End Function
+
+    Private Const MONITOR_DEFAULTTONEAREST As UInteger = 2
+    Private Const MDT_EFFECTIVE_DPI As Integer = 0
+
+    Private Shared Function GetWindowScale(hWnd As IntPtr) As Double
+        Try
+            Dim d As Integer = CInt(GetDpiForWindow(hWnd))
+            If d > 0 Then Return d / 96.0
+        Catch
+        End Try
+
+        Try
+            Dim mon = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST)
+            If mon <> IntPtr.Zero Then
+                Dim dx As UInteger, dy As UInteger
+                If GetDpiForMonitor(mon, MDT_EFFECTIVE_DPI, dx, dy) = 0 AndAlso dx > 0UI Then
+                    Return dx / 96.0
+                End If
+            End If
+        Catch
+        End Try
+
+        Return 1.0
+    End Function
+
+    Private Shared Function Scale(v As Integer, s As Double) As Integer
+        Return Math.Max(1, CInt(Math.Round(v * s)))
+    End Function
+
+
     Private Const PROCESS_QUERY_LIMITED_INFORMATION As Integer = &H1000
 
     <StructLayout(LayoutKind.Sequential)>
@@ -99,6 +140,10 @@ Public Class ScreenshotHelpers
 
     Private Const SW_RESTORE As Integer = 9
     Private Const SW_MINIMIZE As Integer = 6
+
+    Public Shared UseCompositorSafe As Boolean = False
+    Private Shared ReadOnly _capSem As New Threading.SemaphoreSlim(1, 1)
+    Private Shared ReadOnly _jitterRng As New Random()
 
     Private Shared ReadOnly BrowserExeNames As HashSet(Of String) =
     New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {
@@ -270,18 +315,17 @@ Public Class ScreenshotHelpers
         Return bmp
     End Function
 
-    Private Shared Function GetStatsRegion(bmp As Bitmap) As Rectangle
-        Const boxW As Integer = 390
-        Const boxH As Integer = 152
-        Const leftMargin As Integer = 130
-        Const bottomMargin As Integer = 16
+    Private Shared Function GetStatsRegion(bmp As Bitmap, Optional dpiScale As Double = 1.0) As Rectangle
+        Dim boxW As Integer = Scale(390, dpiScale)
+        Dim boxH As Integer = Scale(152, dpiScale)
+        Dim leftMargin As Integer = Scale(130, dpiScale)
+        Dim bottomMargin As Integer = Scale(16, dpiScale)
 
         If bmp Is Nothing OrElse bmp.Width <= 0 OrElse bmp.Height <= 0 Then
             Return Rectangle.Empty
         End If
 
         Dim x As Integer = Math.Min(leftMargin, Math.Max(0, bmp.Width - boxW))
-
         Dim y As Integer = Math.Max(0, bmp.Height - bottomMargin - boxH)
 
         Dim w As Integer = Math.Min(boxW, bmp.Width)
@@ -332,7 +376,7 @@ Public Class ScreenshotHelpers
         Dim text As String = "P2P Monitor By CaS5"
         Dim roll As Integer
         SyncLock _rng
-            roll = _rng.Next(100)
+            roll = _rng.Next(1000)
         End SyncLock
         If roll = 0 Then text = "Choco Is A Pussy"
 
@@ -396,17 +440,53 @@ Public Class ScreenshotHelpers
             Return False
         End Try
     End Function
+    Private Shared Async Function GetBitmapForWindowAsync(hWnd As IntPtr, log As Action(Of String)) As Task(Of Bitmap)
+        Await _capSem.WaitAsync().ConfigureAwait(False)
+        Try
+            If UseCompositorSafe Then
+                'try wgc if it fails policy/OS, fall back to legacy ss mode.
+                Dim bmp As Bitmap = Nothing
+                Try
+                    bmp = TryWgcBitmap(hWnd, log)
+                Catch ex As Exception
+                    log?.Invoke($"ℹ WGC capture failed, reverting to legacy: {ex.Message}")
+                End Try
+                If bmp IsNot Nothing Then Return bmp
+                Return Await Task.Run(Function() TryPrintWindowBitmap(hWnd, log))
+            Else
+                Return Await Task.Run(Function() TryPrintWindowBitmap(hWnd, log))
+            End If
+        Finally
+            _capSem.Release()
+        End Try
+    End Function
 
-    Public Shared Function SnapAndSend(path As String, folderName As String, folderDir As String, log As Action(Of String)) As String
+    Private Shared Function TryWgcBitmap(hWnd As IntPtr, log As Action(Of String)) As Bitmap
+        If hWnd = IntPtr.Zero Then Return Nothing
+        If IsIconic(hWnd) Then
+            log?.Invoke("ℹ Skipping WGC capture (window minimized).")
+            Return Nothing
+        End If
+
+        Try
+            Dim asm = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(Function(a) a.FullName.StartsWith("Windows.", StringComparison.OrdinalIgnoreCase))
+            If asm Is Nothing Then Return Nothing
+            Return Nothing
+        Catch
+            Return Nothing
+        End Try
+    End Function
+
+    Public Shared Async Function SnapAndSend(path As String, folderName As String, folderDir As String, log As Action(Of String)) As Task(Of String)
         Dim hWnd As IntPtr = PickBotWindow(folderName)
         If hWnd = IntPtr.Zero Then
             log?.Invoke($"⚠ Window for '{folderName}' not found.")
             Return Nothing
         End If
 
-        Dim bmp As Bitmap = TryPrintWindowBitmap(hWnd, log)
+        Dim bmp As Bitmap = Await GetBitmapForWindowAsync(hWnd, log)
         If bmp Is Nothing Then
-            log?.Invoke($"⚠ PrintWindow failed for {folderName}.")
+            log?.Invoke($"⚠ Capture failed for {folderName}.")
             Return Nothing
         End If
 
@@ -417,10 +497,17 @@ Public Class ScreenshotHelpers
             desiredW = bmp.Width : desiredH = bmp.Height
         End If
 
-        Dim targetW As Integer = Math.Min(desiredW, bmp.Width)
-        Dim targetH As Integer = Math.Min(desiredH, bmp.Height)
+        Dim dpiScale As Double = GetWindowScale(hWnd)
 
-        Dim offsetY As Integer = If(devMode, 10, -5)
+        Dim desiredWpx As Integer = If(desiredW > 0, Scale(desiredW, dpiScale), bmp.Width)
+        Dim desiredHpx As Integer = If(desiredH > 0, Scale(desiredH, dpiScale), bmp.Height)
+
+        Dim targetW As Integer = Math.Min(desiredWpx, bmp.Width)
+        Dim targetH As Integer = Math.Min(desiredHpx, bmp.Height)
+
+        Dim baseOffsetY As Integer = If(devMode, 10, -5)
+        Dim offsetY As Integer = Scale(baseOffsetY, dpiScale)
+
         Dim startX As Integer = Math.Max(0, (bmp.Width - targetW) \ 2)
         Dim startY As Integer = Math.Max(0, ((bmp.Height - targetH) \ 2) + offsetY)
 
@@ -434,7 +521,7 @@ Public Class ScreenshotHelpers
 
         Try
             If My.Settings.BlurStats AndAlso bmp IsNot Nothing Then
-                Dim sensitiveArea As Rectangle = GetStatsRegion(bmp)
+                Dim sensitiveArea As Rectangle = GetStatsRegion(bmp, dpiScale)
                 If sensitiveArea.Width >= 2 AndAlso sensitiveArea.Height >= 2 Then
                     BlurRegion(bmp, sensitiveArea, 15)
                     DrawCenteredWatermark(bmp, sensitiveArea)
@@ -463,9 +550,9 @@ Public Class ScreenshotHelpers
             Return Nothing
         End If
 
-        Dim bmp As Bitmap = TryPrintWindowBitmap(hWnd, log)
+        Dim bmp As Bitmap = Await GetBitmapForWindowAsync(hWnd, log)
         If bmp Is Nothing Then
-            log?.Invoke($"⚠ PrintWindow failed for {folderName}.")
+            log?.Invoke($"⚠ Capture failed for {folderName}.")
             Return Nothing
         End If
 
@@ -476,10 +563,17 @@ Public Class ScreenshotHelpers
             desiredW = bmp.Width : desiredH = bmp.Height
         End If
 
-        Dim targetW As Integer = Math.Min(desiredW, bmp.Width)
-        Dim targetH As Integer = Math.Min(desiredH, bmp.Height)
+        Dim dpiScale As Double = GetWindowScale(hWnd)
 
-        Dim offsetY As Integer = If(devMode, 10, -5)
+        Dim desiredWpx As Integer = If(desiredW > 0, Scale(desiredW, dpiScale), bmp.Width)
+        Dim desiredHpx As Integer = If(desiredH > 0, Scale(desiredH, dpiScale), bmp.Height)
+
+        Dim targetW As Integer = Math.Min(desiredWpx, bmp.Width)
+        Dim targetH As Integer = Math.Min(desiredHpx, bmp.Height)
+
+        Dim baseOffsetY As Integer = If(devMode, 10, -5)
+        Dim offsetY As Integer = Scale(baseOffsetY, dpiScale)
+
         Dim startX As Integer = Math.Max(0, (bmp.Width - targetW) \ 2)
         Dim startY As Integer = Math.Max(0, ((bmp.Height - targetH) \ 2) + offsetY)
 
@@ -493,7 +587,7 @@ Public Class ScreenshotHelpers
 
         Try
             If My.Settings.BlurStats AndAlso bmp IsNot Nothing Then
-                Dim sensitiveArea As Rectangle = GetStatsRegion(bmp)
+                Dim sensitiveArea As Rectangle = GetStatsRegion(bmp, dpiScale)
                 If sensitiveArea.Width >= 2 AndAlso sensitiveArea.Height >= 2 Then
                     BlurRegion(bmp, sensitiveArea, 15)
                     DrawCenteredWatermark(bmp, sensitiveArea)

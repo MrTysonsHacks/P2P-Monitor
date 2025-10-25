@@ -49,6 +49,10 @@ Public Class EmbedSelector
             My.Settings.Save()
         End If
     End Sub
+
+    Private Sub InitializeComponent()
+
+    End Sub
 End Class
 
 Public Class EmbedEditor

@@ -365,6 +365,42 @@ Namespace My
                 Me("BlurStats") = value
             End Set
         End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("False")>  _
+        Public Property CompositorSafe() As Boolean
+            Get
+                Return CType(Me("CompositorSafe"),Boolean)
+            End Get
+            Set
+                Me("CompositorSafe") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("False")>  _
+        Public Property RememberLastTool() As Boolean
+            Get
+                Return CType(Me("RememberLastTool"),Boolean)
+            End Get
+            Set
+                Me("RememberLastTool") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("")>  _
+        Public Property LastToolChoice() As String
+            Get
+                Return CType(Me("LastToolChoice"),String)
+            End Get
+            Set
+                Me("LastToolChoice") = value
+            End Set
+        End Property
     End Class
 End Namespace
 

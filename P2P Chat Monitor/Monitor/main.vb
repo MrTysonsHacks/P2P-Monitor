@@ -47,16 +47,18 @@ Public Class main
     Private autoCleanup As Boolean
     Private checkInterval As Integer
     Private logTimer As System.Threading.Timer
+    Private updateTimer As System.Threading.Timer
+    Private updateCheckLock As Integer = 0
     Private lastFile As String = Nothing
     Private newLinesSinceLastTick As Boolean = False
-    Private questFailureTriggers As New List(Of Regex)
-    Private questFailureReasons As New List(Of KeyValuePair(Of Regex, String))
-    Private skillFailureTriggers As New List(Of Regex)
-    Private skillFailureReasons As New List(Of KeyValuePair(Of Regex, String))
-    Private combatFailureTriggers As New List(Of Regex)
-    Private combatFailureReasons As New List(Of KeyValuePair(Of Regex, String))
-    Private botFailureTriggers As New List(Of Regex)
-    Private botFailureReasons As New List(Of KeyValuePair(Of Regex, String))
+    Friend Shared questFailureTriggers As New List(Of Regex)
+    Friend Shared questFailureReasons As New List(Of KeyValuePair(Of Regex, String))
+    Friend Shared skillFailureTriggers As New List(Of Regex)
+    Friend Shared skillFailureReasons As New List(Of KeyValuePair(Of Regex, String))
+    Friend Shared combatFailureTriggers As New List(Of Regex)
+    Friend Shared combatFailureReasons As New List(Of KeyValuePair(Of Regex, String))
+    Friend Shared botFailureTriggers As New List(Of Regex)
+    Friend Shared botFailureReasons As New List(Of KeyValuePair(Of Regex, String))
     Private selfieTimer As System.Threading.Timer
     Private ReadOnly selfieLock As New Object()
     Public Shared accountBreakStates As New Dictionary(Of String, Boolean)(StringComparer.OrdinalIgnoreCase)
@@ -70,6 +72,24 @@ Public Class main
     Private mnuStop As ToolStripMenuItem
     Private mnuExit As ToolStripMenuItem
     Private minimizeToTray As Boolean = True
+    Private Class ThreadRoute
+        Public Property Account As String
+        Public Property ForumWebhook As String
+        Public Property ShowChats As Boolean
+        Public Property ShowTasks As Boolean
+        Public Property ShowQuests As Boolean
+        Public Property ShowErrors As Boolean
+        Public Property ShowSelfies As Boolean
+        Public Property ChatsId As String
+        Public Property TasksId As String
+        Public Property QuestsId As String
+        Public Property ErrorsId As String
+        Public Property SelfiesId As String
+    End Class
+
+    Private threadRouteCache As New List(Of ThreadRoute)()
+    Private threadRouteMap As New Dictionary(Of String, ThreadRoute)(StringComparer.OrdinalIgnoreCase)
+
     Private Sub InitTray()
         trayMenu = New ContextMenuStrip() With {.ShowImageMargin = False}
 
@@ -166,6 +186,7 @@ Public Class main
         Next
         Return list
     End Function
+
     Private Sub SyncComboFromText()
         If cmbLogDir Is Nothing Then Exit Sub
         isSyncingUI = True
@@ -273,17 +294,8 @@ Public Class main
         SyncComboFromText()
     End Sub
 
-    Private Sub ScreenshotMode_CheckedChangedHandler(ByVal s As Object, ByVal ev As EventArgs)
-        If cmbLogDir IsNot Nothing Then
-            cmbLogDir.Enabled = Not screenshotmode.Checked
-        End If
-    End Sub
     Private Function GetAllParts() As List(Of String)
-        Return txtLogDir.Text.Split(";"c).
-        Select(Function(p) p.Trim()).
-        Where(Function(p) p.Length > 0).
-        Distinct(StringComparer.OrdinalIgnoreCase).
-        ToList()
+        Return ParseFolders(txtLogDir.Text)
     End Function
 
     Private Sub SetAllParts(parts As IEnumerable(Of String))
@@ -371,40 +383,114 @@ Public Class main
         End If
     End Sub
 
-    Private Sub addFailRule(category As String, pattern As String, Optional friendlyText As String = Nothing, Optional isTrigger As Boolean = True)
+    Private Sub StartUpdateTimer()
+        StopUpdateTimer()
+        updateTimer = New System.Threading.Timer(AddressOf UpdateTimerTick,
+                                             Nothing,
+                                             TimeSpan.FromMinutes(60),
+                                             TimeSpan.FromMinutes(60))
+    End Sub
 
-        Dim regex As New Regex(Regex.Escape(pattern), RegexOptions.IgnoreCase)
+    Private Sub StopUpdateTimer()
+        If updateTimer IsNot Nothing Then
+            updateTimer.Dispose()
+            updateTimer = Nothing
+        End If
+    End Sub
 
-        Select Case category.ToLower()
+    Private Sub UpdateTimerTick(state As Object)
+        If Threading.Interlocked.Exchange(updateCheckLock, 1) = 1 Then Return
+        Try
+            If Me.IsHandleCreated AndAlso Not Me.IsDisposed Then
+                Me.BeginInvoke(Async Sub()
+                                   Try
+                                       Await UpdateHelper.CheckForUpdatesAndPrompt(Me, AddressOf AppendLog)
+                                   Catch ex As Exception
+                                       AppendLog("⚠ Auto-update check failed: " & ex.Message)
+                                   Finally
+                                       Threading.Interlocked.Exchange(updateCheckLock, 0)
+                                   End Try
+                               End Sub)
+            Else
+                Threading.Interlocked.Exchange(updateCheckLock, 0)
+            End If
+        Catch
+            Threading.Interlocked.Exchange(updateCheckLock, 0)
+        End Try
+    End Sub
+
+    Private Shared Function TryCompileRegex(pattern As String) As Regex
+        If String.IsNullOrWhiteSpace(pattern) Then Return Nothing
+        Try
+            Return New Regex(pattern, RegexOptions.IgnoreCase Or RegexOptions.Compiled)
+        Catch ex As ArgumentException
+            Console.WriteLine("[FailRules] Invalid regex skipped: " & pattern & " :: " & ex.Message)
+            Return Nothing
+        End Try
+    End Function
+
+    Private Shared Sub addFailRule(category As String,
+                               pattern As String,
+                               Optional friendlyText As String = Nothing,
+                               Optional isTrigger As Boolean = True)
+
+        Dim rx As Regex = TryCompileRegex(pattern)
+        If rx Is Nothing Then Exit Sub
+
+        Select Case (If(category, String.Empty)).Trim().ToLowerInvariant()
             Case "quest"
                 If isTrigger Then
-                    questFailureTriggers.Add(regex)
+                    questFailureTriggers.Add(rx)
                 Else
-                    questFailureReasons.Add(New KeyValuePair(Of Regex, String)(regex, friendlyText))
+                    questFailureReasons.Add(New KeyValuePair(Of Regex, String)(rx, If(friendlyText, String.Empty)))
                 End If
 
             Case "skill"
                 If isTrigger Then
-                    skillFailureTriggers.Add(regex)
+                    skillFailureTriggers.Add(rx)
                 Else
-                    skillFailureReasons.Add(New KeyValuePair(Of Regex, String)(regex, friendlyText))
+                    skillFailureReasons.Add(New KeyValuePair(Of Regex, String)(rx, If(friendlyText, String.Empty)))
                 End If
 
             Case "combat"
                 If isTrigger Then
-                    combatFailureTriggers.Add(regex)
+                    combatFailureTriggers.Add(rx)
                 Else
-                    combatFailureReasons.Add(New KeyValuePair(Of Regex, String)(regex, friendlyText))
+                    combatFailureReasons.Add(New KeyValuePair(Of Regex, String)(rx, If(friendlyText, String.Empty)))
                 End If
 
             Case "bot"
                 If isTrigger Then
-                    botFailureTriggers.Add(regex)
+                    botFailureTriggers.Add(rx)
                 Else
-                    botFailureReasons.Add(New KeyValuePair(Of Regex, String)(regex, friendlyText))
+                    botFailureReasons.Add(New KeyValuePair(Of Regex, String)(rx, If(friendlyText, String.Empty)))
+                End If
+
+            Case Else
+                If isTrigger Then
+                    botFailureTriggers.Add(rx)
+                Else
+                    botFailureReasons.Add(New KeyValuePair(Of Regex, String)(rx, If(friendlyText, String.Empty)))
                 End If
         End Select
     End Sub
+
+    Public Shared Sub GetAllFailRules(ByRef triggers As List(Of Regex),
+                                  ByRef reasons As List(Of KeyValuePair(Of Regex, String)))
+        triggers = New List(Of Regex)()
+        reasons = New List(Of KeyValuePair(Of Regex, String))()
+
+        triggers.AddRange(questFailureTriggers)
+        triggers.AddRange(skillFailureTriggers)
+        triggers.AddRange(combatFailureTriggers)
+        triggers.AddRange(botFailureTriggers)
+
+        reasons.AddRange(questFailureReasons)
+        reasons.AddRange(skillFailureReasons)
+        reasons.AddRange(combatFailureReasons)
+        reasons.AddRange(botFailureReasons)
+    End Sub
+
     Private Function GetFolderName(filePath As String) As String
         Dim dirPath As String = Path.GetDirectoryName(filePath)
         If String.IsNullOrWhiteSpace(dirPath) Then
@@ -423,7 +509,7 @@ Public Class main
 
             If dlg.ShowDialog() = CommonFileDialogResult.Ok Then
                 For Each p In dlg.FileNames
-                    EnsureFolderInText(p)   ' adds if not already present
+                    EnsureFolderInText(p)
                 Next
                 SyncComboFromText()
             End If
@@ -454,6 +540,8 @@ Public Class main
         selfieMode.Checked = My.Settings.BotSelfie
         numSelfieInterval.Value = My.Settings.BotSelfieInterval
         obscureSS.Checked = My.Settings.BlurStats
+        compositorSafe.Checked = My.Settings.CompositorSafe
+        ScreenshotHelpers.UseCompositorSafe = compositorSafe.Checked
 
         numSelfieInterval.Value = If(My.Settings.BotSelfieInterval > 0, My.Settings.BotSelfieInterval, 60)
         numIntervalSecond.Value = If(My.Settings.CheckInterval > 0, My.Settings.CheckInterval, 5)
@@ -480,27 +568,14 @@ Public Class main
         cmsLogDir = CreateThemedContextMenu()
         cmbLogDir.ContextMenuStrip = cmsLogDir
         AddHandler cmbLogDir.KeyDown, AddressOf CmbLogDir_KeyDownHandler
-
         AddHandler txtLogDir.TextChanged, AddressOf TxtLogDir_TextChangedHandler
         AddHandler cmbLogDir.SelectionChangeCommitted, AddressOf CmbLogDir_SelectionChangeCommittedHandler
-        AddHandler screenshotmode.CheckedChanged, AddressOf ScreenshotMode_CheckedChangedHandler
         accountNames.ContextMenuStrip = CLICreator.CreateAccountContextMenu(accountNames)
 
         SyncComboFromText()
 
         InitTray()
         AddHandler Me.Resize, AddressOf Main_Resize
-
-        cmsLogDir = CreateThemedContextMenu()
-        cmbLogDir.ContextMenuStrip = cmsLogDir
-        AddHandler cmbLogDir.KeyDown, AddressOf CmbLogDir_KeyDownHandler
-
-        mnuRemoveSelected = New ToolStripMenuItem("Remove selected")
-        cmbLogDir.Left = txtLogDir.Left
-        AddHandler cmbLogDir.SelectionChangeCommitted, AddressOf CmbLogDir_SelectionChangeCommittedHandler
-        AddHandler screenshotmode.CheckedChanged, AddressOf ScreenshotMode_CheckedChangedHandler
-
-        SyncComboFromText()
         LoadCfg()
 
         If String.IsNullOrWhiteSpace(My.Settings.ChatEmbedSet) Then
@@ -526,8 +601,10 @@ Public Class main
             My.Settings.Save()
         End If
         taskEmbed.Text = My.Settings.TaskEmbedSet
+        StartMetrics()
         Await FetchFailRules()
-        Await UpdateHelper.CheckForUpdates(AddressOf AppendLog)
+        Await UpdateHelper.CheckForUpdatesAndPrompt(Me, AddressOf AppendLog)
+        StartUpdateTimer()
     End Sub
     Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
         If minimizeToTray AndAlso e.CloseReason = CloseReason.UserClosing Then
@@ -536,12 +613,18 @@ Public Class main
             AppendLog("Minimized to tray (right-click tray icon for options).")
             Return
         End If
-
-        ' Real exit path:
+        StopMetrics()
         StopSelfieTimer()
+        StopUpdateTimer()
         MyBase.OnFormClosing(e)
     End Sub
 
+    Private Sub compositorSafe_CheckedChanged(sender As Object, e As EventArgs) Handles compositorSafe.CheckedChanged
+        ScreenshotHelpers.UseCompositorSafe = compositorSafe.Checked
+        My.Settings.CompositorSafe = compositorSafe.Checked
+        My.Settings.Save()
+        AppendLog(If(compositorSafe.Checked, "Compositor Safe Mode: ON (WGC path + selfie jitter)", "Compositor Safe Mode: OFF (legacy mode)"))
+    End Sub
 
     Private Sub ToggleDarkMode(sender As Object, e As EventArgs) Handles DarkModeEnabled.CheckedChanged
 
@@ -575,6 +658,61 @@ Public Class main
     End Sub
 
     Private watchers As New List(Of FileSystemWatcher)
+
+    Private Shared Function LooksLikeUrl(s As String) As Boolean
+        Return Not String.IsNullOrWhiteSpace(s) AndAlso s.Trim().StartsWith("http", StringComparison.OrdinalIgnoreCase)
+    End Function
+
+    Private Shared Function DetectCategory(embedTitle As String) As String
+        If embedTitle.IndexOf("Chat", StringComparison.OrdinalIgnoreCase) >= 0 Then Return "chat"
+        If embedTitle.IndexOf("Quest", StringComparison.OrdinalIgnoreCase) >= 0 Then Return "quest"
+        If embedTitle.IndexOf("Error", StringComparison.OrdinalIgnoreCase) >= 0 Then Return "error"
+        If embedTitle.IndexOf("Task", StringComparison.OrdinalIgnoreCase) >= 0 Then Return "task"
+        Return ""
+    End Function
+
+    Private Function ResolveLegacyWebhookForCategory(category As String, baseWebhook As String) As String
+        Dim overrideText As String = Nothing
+        Select Case category.ToLowerInvariant()
+            Case "chat" : overrideText = CHAT_CHANNEL
+            Case "quest" : overrideText = QUEST_CHANNEL
+            Case "error" : overrideText = ERROR_CHANNEL
+            Case "task" : overrideText = TASK_CHANNEL
+            Case Else : Return baseWebhook
+        End Select
+
+        If LooksLikeUrl(overrideText) Then
+            Return overrideText
+        End If
+        Return baseWebhook
+    End Function
+
+    Private Function ResolveWebhookFor(embedTitle As String, baseWebhook As String, account As String) As String
+        Dim category As String = DetectCategory(embedTitle)
+        If Not useDTM.Checked Then
+            Return ResolveLegacyWebhookForCategory(category, baseWebhook)
+        End If
+
+        Dim route As ThreadRoute = Nothing
+        If Not String.IsNullOrWhiteSpace(account) AndAlso threadRouteMap.TryGetValue(account, route) AndAlso route IsNot Nothing Then
+            Dim effectiveBase As String = If(Not String.IsNullOrWhiteSpace(route.ForumWebhook), route.ForumWebhook, baseWebhook)
+
+            Select Case category
+                Case "chat"
+                    If route.ShowChats Then Return DiscordHelpers.WithThreadId(effectiveBase, route.ChatsId)
+                Case "quest"
+                    If route.ShowQuests Then Return DiscordHelpers.WithThreadId(effectiveBase, route.QuestsId)
+                Case "error"
+                    If route.ShowErrors Then Return DiscordHelpers.WithThreadId(effectiveBase, route.ErrorsId)
+                Case "task"
+                    If route.ShowTasks Then Return DiscordHelpers.WithThreadId(effectiveBase, route.TasksId)
+            End Select
+            Return ResolveLegacyWebhookForCategory(category, baseWebhook)
+        End If
+        Return ResolveLegacyWebhookForCategory(category, baseWebhook)
+    End Function
+
+
     Private Sub StartMonitoring(sender As Object, e As EventArgs) Handles btnStart.Click
         If monitoring Then
             AppendLog("⚠ Already running.")
@@ -606,6 +744,7 @@ Public Class main
         My.Settings.BotSelfie = selfieMode.Checked
         My.Settings.DarkModeOn = DarkModeEnabled.Checked
         My.Settings.MentionID = txtMention.Text.Trim()
+        My.Settings.CompositorSafe = compositorSafe.Checked
         My.Settings.Save()
 
         WEBHOOK_URL = txtWebhook.Text.Trim()
@@ -618,6 +757,7 @@ Public Class main
         SELFIE_CHANNEL = selfieID.Text.Trim()
         checkInterval = CInt(numIntervalSecond.Value)
 
+        ScreenshotHelpers.UseCompositorSafe = compositorSafe.Checked
         monitorChat = chkMonitorChat.Checked
         monitorQuests = monitorQuest.Checked
         monitorTasks = monitorTask.Checked
@@ -625,7 +765,6 @@ Public Class main
         takeScreenshots = captureWin.Checked
         autoCleanup = autoClean.Checked
 
-        StartMetrics()
         SaveCfg()
 
         If String.IsNullOrWhiteSpace(WEBHOOK_URL) OrElse Not WEBHOOK_URL.StartsWith("http", StringComparison.OrdinalIgnoreCase) Then
@@ -663,35 +802,29 @@ Public Class main
             Next
         Next
 
+        Dim onAnyChange As FileSystemEventHandler =
+        Async Sub(s, eArgs)
+            Await LogHelper.OnLogChanged(
+            s, eArgs,
+            monitoring, lastOffsets, lastProcessedTimes,
+            monitorChat, monitorQuests, takeScreenshots, monitorTasks,
+            questError.Checked, skillIssue.Checked, combatError.Checked,
+            questFailureTriggers, questFailureReasons,
+            skillFailureTriggers, skillFailureReasons,
+            combatFailureTriggers, combatFailureReasons,
+            AddressOf AppendLog, AddressOf SendSegments,
+            AddressOf PostFailAlert, AddressOf GetFolderName)
+        End Sub
+
         For Each folder In logDirs
-            Dim watcher As New FileSystemWatcher(folder, "logfile-*.log")
-            watcher.NotifyFilter = NotifyFilters.LastWrite Or NotifyFilters.FileName Or NotifyFilters.Size
-            watcher.IncludeSubdirectories = False
-
-            AddHandler watcher.Changed, Async Sub(s, eArgs) Await LogHelper.OnLogChanged(
-            s, eArgs,
-            monitoring, lastOffsets, lastProcessedTimes,
-            monitorChat, monitorQuests, takeScreenshots, monitorTasks,
-            questError.Checked, skillIssue.Checked, combatError.Checked,
-            questFailureTriggers, questFailureReasons,
-            skillFailureTriggers, skillFailureReasons,
-            combatFailureTriggers, combatFailureReasons,
-            AddressOf AppendLog, AddressOf SendSegments,
-            AddressOf PostFailAlert, AddressOf GetFolderName)
-
-            AddHandler watcher.Created, Async Sub(s, eArgs) Await LogHelper.OnLogChanged(
-            s, eArgs,
-            monitoring, lastOffsets, lastProcessedTimes,
-            monitorChat, monitorQuests, takeScreenshots, monitorTasks,
-            questError.Checked, skillIssue.Checked, combatError.Checked,
-            questFailureTriggers, questFailureReasons,
-            skillFailureTriggers, skillFailureReasons,
-            combatFailureTriggers, combatFailureReasons,
-            AddressOf AppendLog, AddressOf SendSegments,
-            AddressOf PostFailAlert, AddressOf GetFolderName)
-
-            watcher.SynchronizingObject = Me
-            watcher.EnableRaisingEvents = True
+            Dim watcher As New FileSystemWatcher(folder, "logfile-*.log") With {
+        .NotifyFilter = NotifyFilters.LastWrite Or NotifyFilters.FileName Or NotifyFilters.Size,
+        .IncludeSubdirectories = False,
+        .SynchronizingObject = Me,
+        .EnableRaisingEvents = True
+        }
+            AddHandler watcher.Changed, onAnyChange
+            AddHandler watcher.Created, onAnyChange
             watchers.Add(watcher)
         Next
 
@@ -718,7 +851,6 @@ Public Class main
             logTimer = Nothing
         End If
 
-        StopMetrics()
         StopSelfieTimer()
 
         monitoring = False
@@ -726,7 +858,8 @@ Public Class main
     End Sub
 
     Private Async Function PostFailAlert(trigger As String, reason As String, filePath As String, FailureType As String) As Task
-        Dim targetWebhook As String = If(Not String.IsNullOrWhiteSpace(ERROR_CHANNEL), ERROR_CHANNEL, WEBHOOK_URL)
+        Dim accountName As String = GetFolderName(filePath)
+        Dim targetWebhook As String = ResolveWebhookFor("Error", WEBHOOK_URL, accountName)
         Dim payload As String = errorEmbed.Text.Trim()
         If String.IsNullOrWhiteSpace(payload) Then
             AppendLog("⚠ Error embed textbox is empty, cannot send embed.")
@@ -860,23 +993,20 @@ Public Class main
             )
             End If
 
-            Dim targetWebhook As String = WEBHOOK_URL
-            If embedTitle.Contains("Chat") Then
-                targetWebhook = If(Not String.IsNullOrWhiteSpace(CHAT_CHANNEL), CHAT_CHANNEL, WEBHOOK_URL)
-            ElseIf embedTitle.Contains("Quest") Then
-                targetWebhook = If(Not String.IsNullOrWhiteSpace(QUEST_CHANNEL), QUEST_CHANNEL, WEBHOOK_URL)
-            ElseIf embedTitle.Contains("Error") Then
-                targetWebhook = If(Not String.IsNullOrWhiteSpace(ERROR_CHANNEL), ERROR_CHANNEL, WEBHOOK_URL)
-            ElseIf embedTitle.Contains("Task") Then
-                targetWebhook = If(Not String.IsNullOrWhiteSpace(TASK_CHANNEL), TASK_CHANNEL, WEBHOOK_URL)
+            Dim accountName As String = GetFolderName(path)
+            Dim targetWebhook As String = ResolveWebhookFor(embedTitle, WEBHOOK_URL, accountName)
+
+            If String.IsNullOrWhiteSpace(targetWebhook) Then
+                AppendLog($"🚫 {embedTitle}: disabled by Thread Manager for account '{accountName}'.")
+                Continue For
             End If
+
 
             Dim err As String = Nothing
             If DiscordHelpers.IsJson(payload, err) Then
                 If Not String.IsNullOrWhiteSpace(screenshotPath) AndAlso IO.File.Exists(screenshotPath) Then
                     Await DiscordHelpers.UploadFile(targetWebhook, screenshotPath, payload, AddressOf AppendLog)
                     If autoCleanup Then
-                        ' delete in the background after a small delay
                         Await Task.Run(Async Function()
                                            Await Task.Delay(5000)
                                            Try
@@ -897,26 +1027,6 @@ Public Class main
             End If
         Next
     End Function
-
-    Private Sub ToggleSecretMode(sender As Object, e As EventArgs) Handles screenshotmode.CheckedChanged
-
-        Dim mask As Boolean = screenshotmode.Checked
-
-        chatID.Password = False
-        questID.Password = False
-        errorID.Password = False
-        txtWebhook.Password = False
-        txtMention.Password = False
-        txtLogDir.Password = False
-        If screenshotmode.Checked Then
-            chatID.Password = True
-            questID.Password = True
-            errorID.Password = True
-            txtWebhook.Password = True
-            txtMention.Password = True
-            txtLogDir.Password = True
-        End If
-    End Sub
 
     Private Function GetSelfieIntervalMinutes() As Integer
         Dim m As Integer = 0
@@ -977,20 +1087,20 @@ Public Class main
                 rawLogDirs = My.Settings.LogFolderPath
             End Try
 
-            Dim url As String =
+            Dim baseWebhook As String =
             If(Not String.IsNullOrWhiteSpace(selfieUrl) AndAlso selfieUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase),
                selfieUrl,
                defaultUrl)
 
-            If String.IsNullOrWhiteSpace(url) OrElse Not url.StartsWith("http", StringComparison.OrdinalIgnoreCase) Then
+            If String.IsNullOrWhiteSpace(baseWebhook) OrElse Not baseWebhook.StartsWith("http", StringComparison.OrdinalIgnoreCase) Then
                 AppendLog("⚠ Selfie mode: selfie/default Discord webhook is empty/invalid.")
                 Return
             End If
 
             Dim roots = rawLogDirs.Split(";"c).
-                Select(Function(p) p.Trim()).
-                Where(Function(p) p.Length > 0 AndAlso IO.Directory.Exists(p)).
-                ToList()
+            Select(Function(p) p.Trim()).
+            Where(Function(p) p.Length > 0 AndAlso IO.Directory.Exists(p)).
+            ToList()
 
             If roots.Count = 0 Then
                 AppendLog("⚠ Selfie mode: no valid log folders configured.")
@@ -1001,6 +1111,17 @@ Public Class main
                 Try
                     Dim folderName As String = New IO.DirectoryInfo(accountFolder).Name
                     Dim accountName As String = folderName
+
+                    If compositorSafe.Checked Then
+                        Dim jitter As Integer
+                        SyncLock GetType(main)
+                            Dim r As New Random()
+                            Dim mag = r.Next(250, 501)
+                            Dim sign = If(r.Next(2) = 0, -1, 1)
+                            jitter = sign * mag
+                        End SyncLock
+                        If jitter > 0 Then Await Task.Delay(jitter)
+                    End If
 
                     If accountBreakStates.ContainsKey(folderName) AndAlso accountBreakStates(folderName) Then
                         AppendLog($"⏸ Skipping selfie for {folderName} (on break).")
@@ -1018,9 +1139,24 @@ Public Class main
                         Continue For
                     End If
 
+                    Dim effectiveWebhook As String =
+                    If(LooksLikeUrl(selfieUrl), selfieUrl, baseWebhook)
+
+                    If useDTM.Checked Then
+                        Dim route As ThreadRoute = Nothing
+                        If threadRouteMap.TryGetValue(accountName, route) AndAlso route IsNot Nothing Then
+                            If route.ShowSelfies Then
+                                Dim forumBase As String = If(Not String.IsNullOrWhiteSpace(route.ForumWebhook), route.ForumWebhook, baseWebhook)
+                                effectiveWebhook = DiscordHelpers.WithThreadId(forumBase, route.SelfiesId)
+                            Else
+                                effectiveWebhook = If(LooksLikeUrl(selfieUrl), selfieUrl, baseWebhook)
+                            End If
+                        End If
+                    End If
+
                     Dim payload As String = "{""content"": ""📸 Periodic screenshot for account: " & accountName.Replace("""", "'"c) & """}"
 
-                    Await DiscordHelpers.UploadFile(url, shotPath, payload, AddressOf AppendLog)
+                    Await DiscordHelpers.UploadFile(effectiveWebhook, shotPath, payload, AddressOf AppendLog)
                     AppendLog($"✅ Uploaded selfie for {folderName}.")
 
                     If autoCleanup AndAlso IO.File.Exists(shotPath) Then
@@ -1078,6 +1214,7 @@ Public Class main
         Public TaskEmbedSet As String
         Public DarkModeOn As Boolean
         Public BlurStats As Boolean
+        Public ThreadRoutes As List(Of ThreadRoute)
     End Class
 
     Private Shared Function GetCfgPath() As String
@@ -1113,7 +1250,8 @@ Public Class main
             .QuestEmbedSet = questEmbed.Text,
             .TaskEmbedSet = taskEmbed.Text,
             .DarkModeOn = DarkModeEnabled.Checked,
-            .BlurStats = obscureSS.Checked
+            .BlurStats = obscureSS.Checked,
+            .ThreadRoutes = threadRouteCache
         }
             Dim json = Newtonsoft.Json.JsonConvert.SerializeObject(cfg, Formatting.Indented)
             IO.File.WriteAllText(GetCfgPath(), json, Encoding.UTF8)
@@ -1133,6 +1271,13 @@ Public Class main
 
             Dim json = IO.File.ReadAllText(path, Encoding.UTF8)
             Dim cfg = Newtonsoft.Json.JsonConvert.DeserializeObject(Of AppCfg)(json)
+            threadRouteCache = If(cfg.ThreadRoutes, New List(Of ThreadRoute)())
+            threadRouteMap.Clear()
+            For Each r In threadRouteCache
+                If Not String.IsNullOrWhiteSpace(r.Account) Then
+                    threadRouteMap(r.Account) = r
+                End If
+            Next
             If cfg Is Nothing Then
                 AppendLog("⚠ Settings.cfg invalid; ignoring.")
                 Exit Sub
@@ -1172,25 +1317,15 @@ Public Class main
         End Try
     End Sub
 
-    Private Sub CommonButtons(sender As Object, e As EventArgs) Handles clearBtn.Click, forcecheckBtn.Click, wikiBtn.Click, p2pdiscordBtn.Click, dbdiscordBtn.Click, dbforumBtn.Click, p2psalesBtn.Click, p2psetupBtn.Click, p2psurvivalBtn.Click, p2pgearBtn.Click, monitorDiscord.Click
+    Private Sub CommonButtons(sender As Object, e As EventArgs) Handles clearBtn.Click, wikiBtn.Click, p2pdiscordBtn.Click, dbdiscordBtn.Click, dbforumBtn.Click, p2psalesBtn.Click, p2psetupBtn.Click, p2psurvivalBtn.Click, p2pgearBtn.Click, monitorDiscord.Click
 
         If sender Is clearBtn Then
             txtLog.Clear()
             Exit Sub
         End If
 
-        If sender Is forcecheckBtn Then
-            If monitoring Then
-                AppendLog("Forcing check heartbeat..")
-                LogHelper.HeartbeatTick(Nothing, AddressOf AppendLog, lastFile, checkInterval, LOG_DIR, lastOffsets, lastProcessedTimes)
-            Else
-                AppendLog("⚠ Monitor is not running, cannot force check.")
-            End If
-            Exit Sub
-        End If
-
         Dim url As String = Nothing
-        Dim failMsg As String = ""
+        Dim failMsg = ""
 
         Select Case True
             Case sender Is wikiBtn
@@ -1219,7 +1354,7 @@ Public Class main
                 failMsg = "Failed to open P2P supported gear page: "
             Case sender Is monitorDiscord
                 url = "https://discord.gg/EpuaMTCzx5"
-                failMsg = "Failed to open P2P supported gear page: "
+                failMsg = "Failed to open monitor Discord invite: "
         End Select
 
         If Not String.IsNullOrWhiteSpace(url) Then
@@ -1384,7 +1519,7 @@ Public Class main
         selector.ShowDialog(Me)
     End Sub
     Private Async Sub btnCheckUpdates_Click(sender As Object, e As EventArgs) Handles btnCheckUpdates.Click
-        Await UpdateHelper.CheckForUpdates(AddressOf AppendLog)
+        Await UpdateHelper.CheckForUpdatesAndPrompt(Me, AddressOf AppendLog, forcePrompt:=True)
     End Sub
     Private Sub btnCleanLog_Click(sender As Object, e As EventArgs) Handles btnCleanLog.Click
         Try
@@ -1434,7 +1569,39 @@ Public Class main
             covertMode.Checked,
             freshStart.Checked,
             accountNames.Items.Cast(Of String)(),
-            cliOutput
+            cliOutput,
+            launchP2P.Checked
         )
+    End Sub
+
+    Private Sub useDTM_CheckedChanged(sender As Object, e As EventArgs) Handles useDTM.CheckedChanged
+        If useDTM.Checked Then
+            dtmBtn.Visible = True
+        Else
+            dtmBtn.Visible = False
+        End If
+    End Sub
+
+    Private Sub dtmBtn_Click(sender As Object, e As EventArgs) Handles dtmBtn.Click
+        Using frm As New DiscordThreadManager()
+            frm.ShowDialog(Me)
+        End Using
+        LoadCfg()
+    End Sub
+
+    Private Sub btnBackToMenu_Click(sender As Object, e As EventArgs) Handles btnBackToMenu.Click
+        Try
+            RemoveHandler Me.Resize, AddressOf Main_Resize
+        Catch
+        End Try
+        Me.ShowInTaskbar = False
+        Me.Hide()
+        Dim menu = Application.OpenForms.OfType(Of Launcher).FirstOrDefault()
+        If menu Is Nothing OrElse menu.IsDisposed Then
+            menu = New Launcher()
+        End If
+        menu.StartPosition = FormStartPosition.CenterScreen
+        menu.Show()
+        menu.Activate()
     End Sub
 End Class

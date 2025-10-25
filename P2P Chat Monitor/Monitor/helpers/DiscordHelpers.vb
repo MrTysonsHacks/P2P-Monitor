@@ -7,6 +7,12 @@ Public Class DiscordHelpers
 
     Private Shared ReadOnly http As New Net.Http.HttpClient()
 
+    Public Shared Function WithThreadId(baseWebhook As String, threadId As String) As String
+        If String.IsNullOrWhiteSpace(baseWebhook) OrElse String.IsNullOrWhiteSpace(threadId) Then Return baseWebhook
+        Dim sep = If(baseWebhook.Contains("?"), "&", "?")
+        Return baseWebhook.Trim() & sep & "thread_id=" & threadId.Trim()
+    End Function
+
     Public Shared Function JsonSafe(s As String) As String
         If s Is Nothing Then Return ""
         Dim t = s.Replace("\\", "\\\\").Replace("""", "\""")
@@ -89,7 +95,7 @@ Public Class DiscordHelpers
         }
       ],
       ""footer"": {
-        ""text"": ""P2P Monitor Detection system - {time}""
+        ""text"": ""P2P Monitor Detection System - {time}""
       },
       ""image"": {
         ""url"": ""attachment://{screenshot}""
@@ -173,7 +179,7 @@ Public Class DiscordHelpers
         }
       ],
       ""footer"": {
-        ""text"": ""P2P Monitor Detection system - {time}""
+        ""text"": ""P2P Monitor Detection System - {time}""
       },
       ""image"": {
         ""url"": ""attachment://{screenshot}""
