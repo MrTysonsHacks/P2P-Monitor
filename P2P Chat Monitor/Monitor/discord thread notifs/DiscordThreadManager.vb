@@ -101,17 +101,25 @@ Partial Class DiscordThreadManager
 
     Private Sub ReloadAccountsFromSettings()
         allAccounts = New List(Of String)()
-        Dim raw As String = My.Settings.LogFolderPath
-        If String.IsNullOrWhiteSpace(raw) Then Exit Sub
 
-        For Each part In raw.Split(";"c)
-            Dim p = part.Trim()
-            If p.Length = 0 Then Continue For
-            Dim name As String = New DirectoryInfo(p).Name
-            If Not allAccounts.Contains(name, StringComparer.OrdinalIgnoreCase) Then
-                allAccounts.Add(name)
-            End If
+        Dim sources As List(Of String) = Nothing
+        Try
+            sources = main.GetLiveLogFolderPaths()
+        Catch
+            sources = Nothing
+        End Try
+        If sources Is Nothing Then sources = New List(Of String)()
+
+        For Each p In sources
+            Try
+                Dim name As String = New DirectoryInfo(p).Name
+                If Not allAccounts.Contains(name, StringComparer.OrdinalIgnoreCase) Then
+                    allAccounts.Add(name)
+                End If
+            Catch
+            End Try
         Next
+
         allAccounts = allAccounts.OrderBy(Function(s) s, StringComparer.OrdinalIgnoreCase).ToList()
     End Sub
 

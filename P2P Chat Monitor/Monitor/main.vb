@@ -1317,6 +1317,19 @@ Public Class main
         End Try
     End Sub
 
+    Public Shared Function GetLiveLogFolderPaths() As List(Of String)
+        Try
+            Dim inst = Application.OpenForms.OfType(Of main)().FirstOrDefault()
+            If inst IsNot Nothing AndAlso inst.IsHandleCreated AndAlso Not inst.IsDisposed Then
+                Dim raw As String = Nothing
+                inst.Invoke(Sub() raw = inst.txtLogDir.Text)
+                Return ParseFolders(raw)
+            End If
+        Catch
+        End Try
+        Return ParseFolders(My.Settings.LogFolderPath)
+    End Function
+
     Private Sub CommonButtons(sender As Object, e As EventArgs) Handles clearBtn.Click, wikiBtn.Click, p2pdiscordBtn.Click, dbdiscordBtn.Click, dbforumBtn.Click, p2psalesBtn.Click, p2psetupBtn.Click, p2psurvivalBtn.Click, p2pgearBtn.Click, monitorDiscord.Click
 
         If sender Is clearBtn Then
