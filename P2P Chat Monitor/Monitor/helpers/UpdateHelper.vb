@@ -8,7 +8,7 @@ Imports MaterialSkin
 Imports MaterialSkin.Controls
 
 Public Class UpdateHelper
-    Private Shared ReadOnly currentVersion As Version = New Version("1.4.0")
+    Private Shared ReadOnly currentVersion As Version = New Version("1.4.1")
 
     Private Const RepoOwner As String = "MrTysonsHacks"
     Private Const RepoName As String = "P2P-Monitor"

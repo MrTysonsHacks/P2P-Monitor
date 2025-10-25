@@ -390,8 +390,11 @@ Partial Class DiscordThreadManager
 
     Private Function CardSelectedAccount(card As MaterialCard) As String
         Dim cmb = TryCast(FindChildByName(card, "accounts"), MaterialComboBox)
-        If cmb Is Nothing OrElse cmb.SelectedItem Is Nothing Then Return ""
-        Return cmb.SelectedItem.ToString()
+        If cmb Is Nothing Then Return ""
+        Dim sel As String = Nothing
+        If cmb.SelectedItem IsNot Nothing Then sel = cmb.SelectedItem.ToString()
+        If String.IsNullOrWhiteSpace(sel) Then sel = TryCast(cmb.Tag, String)
+        Return If(sel, "")
     End Function
 
     Private Function CollectRoutesFromUI() As List(Of RoutePersist)
@@ -481,6 +484,8 @@ Partial Class DiscordThreadManager
             targetCards.Add(newCard)
         Next
 
+        selectedAccounts.Clear()
+
         For i = 0 To arr.Count - 1
             Dim obj = TryCast(arr(i), JObject)
             If obj Is Nothing Then Continue For
@@ -489,35 +494,44 @@ Partial Class DiscordThreadManager
 
             Dim acctName As String = CStr(obj.Value(Of String)("Account"))
             Dim cmb = TryCast(FindChildByName(card, "accounts"), MaterialComboBox)
-            If cmb IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(acctName) Then
-                Dim idx = cmb.Items.IndexOf(acctName)
-                If idx >= 0 Then cmb.SelectedIndex = idx
+            If cmb IsNot Nothing Then
+                RefreshOneAccountCombo(cmb)
+                If Not String.IsNullOrWhiteSpace(acctName) Then
+                    Dim idx = cmb.Items.IndexOf(acctName)
+                    If idx >= 0 Then
+                        cmb.SelectedIndex = idx
+                    Else
+                        cmb.SelectedIndex = -1
+                    End If
+
+                    cmb.Tag = acctName
+                    selectedAccounts.Add(acctName)
+                End If
             End If
 
             Dim tb = FindWebhookTextBox(card)
             If tb IsNot Nothing Then tb.Text = CStr(obj.Value(Of String)("ForumWebhook"))
-
             Dim state As New DTMState With {
-            .Options = New DTMOpts With {
-                .Chats = obj.Value(Of Boolean?)("ShowChats").GetValueOrDefault(True),
-                .Tasks = obj.Value(Of Boolean?)("ShowTasks").GetValueOrDefault(True),
-                .Quests = obj.Value(Of Boolean?)("ShowQuests").GetValueOrDefault(True),
-                .Errors = obj.Value(Of Boolean?)("ShowErrors").GetValueOrDefault(True),
-                .Selfies = obj.Value(Of Boolean?)("ShowSelfies").GetValueOrDefault(True)
-            },
-            .Ids = New ThreadIdSet With {
-                .ChatsId = CStr(obj.Value(Of String)("ChatsId")),
-                .TasksId = CStr(obj.Value(Of String)("TasksId")),
-                .QuestsId = CStr(obj.Value(Of String)("QuestsId")),
-                .ErrorsId = CStr(obj.Value(Of String)("ErrorsId")),
-                .SelfiesId = CStr(obj.Value(Of String)("SelfiesId"))
+                .Options = New DTMOpts With {
+                    .Chats = obj.Value(Of Boolean?)("ShowChats").GetValueOrDefault(True),
+                    .Tasks = obj.Value(Of Boolean?)("ShowTasks").GetValueOrDefault(True),
+                    .Quests = obj.Value(Of Boolean?)("ShowQuests").GetValueOrDefault(True),
+                    .Errors = obj.Value(Of Boolean?)("ShowErrors").GetValueOrDefault(True),
+                    .Selfies = obj.Value(Of Boolean?)("ShowSelfies").GetValueOrDefault(True)
+                },
+                .Ids = New ThreadIdSet With {
+                    .ChatsId = CStr(obj.Value(Of String)("ChatsId")),
+                    .TasksId = CStr(obj.Value(Of String)("TasksId")),
+                    .QuestsId = CStr(obj.Value(Of String)("QuestsId")),
+                    .ErrorsId = CStr(obj.Value(Of String)("ErrorsId")),
+                    .SelfiesId = CStr(obj.Value(Of String)("SelfiesId"))
+                }
             }
-        }
             card.Tag = state
+
             Dim btn = TryCast(FindChildByName(card, "btnMonitorOptions"), MaterialButton)
             If btn IsNot Nothing Then btn.Text = "Monitor Options"
         Next
-
         RefreshAllAccountCombos()
         LayoutCards()
     End Sub
