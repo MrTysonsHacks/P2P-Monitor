@@ -45,6 +45,7 @@ Public Class main
     Private monitorTasks As Boolean
     Private takeScreenshots As Boolean
     Private autoCleanup As Boolean
+    Private DTMEnabled As Boolean
     Private checkInterval As Integer
     Private logTimer As System.Threading.Timer
     Private updateTimer As System.Threading.Timer
@@ -541,6 +542,7 @@ Public Class main
         numSelfieInterval.Value = My.Settings.BotSelfieInterval
         obscureSS.Checked = My.Settings.BlurStats
         compositorSafe.Checked = My.Settings.CompositorSafe
+        useDTM.Checked = My.Settings.useDTM
         ScreenshotHelpers.UseCompositorSafe = compositorSafe.Checked
 
         numSelfieInterval.Value = If(My.Settings.BotSelfieInterval > 0, My.Settings.BotSelfieInterval, 60)
@@ -745,6 +747,7 @@ Public Class main
         My.Settings.DarkModeOn = DarkModeEnabled.Checked
         My.Settings.MentionID = txtMention.Text.Trim()
         My.Settings.CompositorSafe = compositorSafe.Checked
+        My.Settings.useDTM = useDTM.Checked
         My.Settings.Save()
 
         WEBHOOK_URL = txtWebhook.Text.Trim()

@@ -401,6 +401,18 @@ Namespace My
                 Me("LastToolChoice") = value
             End Set
         End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("False")>  _
+        Public Property useDTM() As Boolean
+            Get
+                Return CType(Me("useDTM"),Boolean)
+            End Get
+            Set
+                Me("useDTM") = value
+            End Set
+        End Property
     End Class
 End Namespace
 

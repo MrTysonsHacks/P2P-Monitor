@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <RootNamespace>P2P_Chat_Monitor</RootNamespace>
     <StartupObject>P2P_Chat_Monitor.My.MyApplication</StartupObject>
     <UseWindowsForms>true</UseWindowsForms>
@@ -12,9 +12,9 @@
     <Authors>$(Company)</Authors>
     <Copyright>© CaS5 2025</Copyright>
     <PackageIcon>25614895.png</PackageIcon>
-    <FileVersion>1.4.1</FileVersion>
-    <AssemblyVersion>1.4.1</AssemblyVersion>
-    <Version>1.4.1</Version>
+    <FileVersion>1.4.2</FileVersion>
+    <AssemblyVersion>1.4.2</AssemblyVersion>
+    <Version>1.4.2</Version>
     <Description>A monitor for Aeglen's P2P Master AI that reports to specified Discord webhook</Description>
   </PropertyGroup>
 
