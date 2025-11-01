@@ -1404,6 +1404,7 @@ Public Class main
         Public BlurStats As Boolean
         Public monitorAutoUpdate As Boolean
         Public compositorSafe As Boolean
+        Public useDTM As Boolean
         Public ChatEmbedSet As String
         Public ErrorEmbedSet As String
         Public QuestEmbedSet As String
@@ -1445,6 +1446,7 @@ Public Class main
             .BlurStats = obscureSS.Checked,
             .monitorAutoUpdate = monitorAutoUpdate.Checked,
             .compositorSafe = compositorSafe.Checked,
+            .useDTM = useDTM.Checked,
             .ChatEmbedSet = chatEmbed.Text,
             .ErrorEmbedSet = errorEmbed.Text,
             .QuestEmbedSet = questEmbed.Text,
@@ -1523,6 +1525,7 @@ Public Class main
             If root("BlurStats") IsNot Nothing Then obscureSS.Checked = CBool(root("BlurStats"))
             If root("useDTM") IsNot Nothing Then useDTM.Checked = CBool(root("useDTM"))
             If root("AutoUpdate") IsNot Nothing Then monitorAutoUpdate.Checked = CBool(root("AutoUpdate"))
+            If root("compositorSafe") IsNot Nothing Then compositorSafe.Checked = CBool(root("compositorSafe"))
             SyncComboFromText()
             ApplyTheme(DarkModeEnabled.Checked)
             AppendLog("Settings.cfg loaded.")
