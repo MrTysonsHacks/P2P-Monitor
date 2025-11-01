@@ -64,6 +64,11 @@ Public Class main
     Private ReadOnly selfieLock As New Object()
     Public Shared accountBreakStates As New Dictionary(Of String, Boolean)(StringComparer.OrdinalIgnoreCase)
     Private metricsTimer As System.Threading.Timer
+    Private ReadOnly _q() As Keys = {Keys.Up, Keys.Down, Keys.Left, Keys.Right, Keys.Left, Keys.Right, Keys.B, Keys.A}
+    Private _qix As Integer = 0
+    Private _ovl As Control = Nothing
+    Private _gif As Image
+    Private _gifRect As Rectangle
     Private METRICS_WEBHOOK_URL As String = "https://discord.com/api/webhooks/1428006646080208937/JfLDDOsm7n_BTkYIbjbXS0mR4sWaktOfBL9cRDAgnxeMp5r422oPZkYuRNz28koGB4l4"
     Private CLIENT_ID As String = Environment.UserName & "@" & Environment.MachineName
     Private tray As NotifyIcon
@@ -90,6 +95,160 @@ Public Class main
 
     Private threadRouteCache As New List(Of ThreadRoute)()
     Private threadRouteMap As New Dictionary(Of String, ThreadRoute)(StringComparer.OrdinalIgnoreCase)
+
+    Private Sub _kp(ByVal s As Object, ByVal e As KeyEventArgs)
+        Dim k = e.KeyCode
+
+        If k = _q(_qix) Then
+            _qix += 1
+            If _qix = _q.Length Then
+                _qix = 0
+                e.SuppressKeyPress = True
+                __telemetry()
+            End If
+        Else
+            _qix = If(k = _q(0), 1, 0)
+        End If
+    End Sub
+
+    Private Sub __telemetry()
+        If _ovl IsNot Nothing Then Return
+        Dim fx As New _fxLayer(Me)
+        _ovl = fx
+        Me.Controls.Add(fx)
+        fx.BringToFront()
+        AddHandler fx.Disposed, Sub() _ovl = Nothing
+    End Sub
+
+
+    Private NotInheritable Class _fxLayer
+        Inherits Control
+
+        Private ReadOnly _t As New System.Windows.Forms.Timer() With {.Interval = 16}
+        Private ReadOnly _ttl As New System.Windows.Forms.Timer() With {.Interval = 6500}
+
+        Private _ageMs As Integer
+        Private ReadOnly _sw As New Stopwatch()
+        Private ReadOnly _rnd As New Random()
+        Private ReadOnly _p As New List(Of P)()
+
+        Private Structure P
+            Public X As Single
+            Public Y As Single
+            Public VX As Single
+            Public VY As Single
+            Public S As Single
+            Public C As Color
+            Public R As Single
+            Public VR As Single
+        End Structure
+
+        Public Sub New(host As Form)
+            SetStyle(
+            ControlStyles.AllPaintingInWmPaint Or
+            ControlStyles.UserPaint Or
+            ControlStyles.OptimizedDoubleBuffer Or
+            ControlStyles.SupportsTransparentBackColor,
+            True)
+
+            Dock = DockStyle.Fill
+            BackColor = Color.Transparent
+            Enabled = False
+
+            Dim w = host.ClientSize.Width
+            Dim h = host.ClientSize.Height
+            If w <= 0 Then w = 1
+            If h <= 0 Then h = 1
+
+            Dim count As Integer = Math.Max(120, CInt(Math.Min(260, (w * h) / 8000.0)))
+
+            For i = 0 To count - 1
+                _p.Add(New P With {
+                .X = _rnd.Next(0, w),
+                .Y = -_rnd.Next(0, h \ 2),
+                .VX = CSng((_rnd.NextDouble() - 0.5) * 3.5),
+                .VY = CSng(1.2 + _rnd.NextDouble() * 2.0),
+                .S = CSng(4 + _rnd.NextDouble() * 10),
+                .C = Color.FromArgb(220, _rnd.Next(40, 255), _rnd.Next(40, 255), _rnd.Next(40, 255)),
+                .R = CSng(_rnd.NextDouble() * Math.PI * 2),
+                .VR = CSng((_rnd.NextDouble() - 0.5) * 0.25)
+            })
+            Next
+
+            AddHandler _t.Tick, AddressOf OnTick
+            AddHandler _ttl.Tick,
+            Sub()
+                _ttl.Stop()
+                Try
+                    _t.Stop()
+                Catch
+                End Try
+                Dispose()
+            End Sub
+
+            _sw.Start()
+            _t.Start()
+            _ttl.Start()
+        End Sub
+
+        Protected Overrides Sub OnPaintBackground(e As PaintEventArgs)
+            MyBase.OnPaintBackground(e)
+        End Sub
+
+        Private Sub OnTick(sender As Object, e As EventArgs)
+            Dim dtMs = CInt(_sw.ElapsedMilliseconds)
+            _ageMs += dtMs
+            _sw.Restart()
+
+            For i = 0 To _p.Count - 1
+                Dim q = _p(i)
+                q.X += q.VX
+                q.Y += q.VY
+                q.VY += 0.035F
+                q.R += q.VR
+                _p(i) = q
+            Next
+
+            Invalidate()
+        End Sub
+
+        Protected Overrides Sub OnPaint(e As PaintEventArgs)
+            MyBase.OnPaint(e)
+            Dim g = e.Graphics
+            g.SmoothingMode = Drawing2D.SmoothingMode.AntiAlias
+
+            For Each q In _p
+                Using br As New SolidBrush(q.C)
+                    Dim s = q.S
+                    g.TranslateTransform(q.X, q.Y)
+                    g.RotateTransform(q.R * 57.29578F)
+                    g.FillRectangle(br, -s * 0.5F, -s * 0.5F, s, s * 0.6F)
+                    g.ResetTransform()
+                End Using
+            Next
+
+            Dim rect = Me.ClientRectangle
+            If rect.Width <= 0 OrElse rect.Height <= 0 Then Return
+
+            Dim fSize As Single = Math.Max(28.0F, Math.Min(rect.Width, rect.Height) / 10.0F)
+            Using f As New Font("Roboto", fSize, FontStyle.Bold)
+                Dim sf As New StringFormat With {.Alignment = StringAlignment.Center, .LineAlignment = StringAlignment.Center}
+                Dim txt As String = "Choco Is A Pussy"
+                For dx = -2 To 2
+                    For dy = -2 To 2
+                        If dx = 0 AndAlso dy = 0 Then Continue For
+                        Using sb As New SolidBrush(Color.FromArgb(180, 0, 0, 0))
+                            g.DrawString(txt, f, sb, rect.Left + rect.Width \ 2 + dx, rect.Top + rect.Height \ 3 + dy, sf)
+                        End Using
+                    Next
+                Next
+                Using sb As New SolidBrush(Color.White)
+                    g.DrawString(txt, f, sb, rect.Left + rect.Width \ 2, rect.Top + rect.Height \ 3, sf)
+                End Using
+            End Using
+        End Sub
+    End Class
+
 
     Private Sub InitTray()
         trayMenu = New ContextMenuStrip() With {.ShowImageMargin = False}
@@ -155,13 +314,16 @@ Public Class main
     End Sub
 
     Private Sub StartMetrics()
-        metricsTimer = New System.Threading.Timer(AddressOf MetricsTick, Nothing, 0, 60_000)
+        metricsTimer = New System.Threading.Timer(AddressOf MetricsTick, Nothing, 60_000, 60_000)
     End Sub
 
     Private Async Sub MetricsTick(state As Object)
         Try
             Dim payload = "{""content"":""HB " & CLIENT_ID & " " & DateTimeOffset.UtcNow.ToUnixTimeSeconds() & """}"
-            Await DiscordHelpers.PostJson(METRICS_WEBHOOK_URL, payload, AddressOf AppendLog)
+            Dim ok = Await DiscordHelpers.PostJsonOk(METRICS_WEBHOOK_URL, payload)
+            If Not ok Then
+                AppendLog("⚠ Metrics heartbeat failed (post).")
+            End If
         Catch ex As Exception
             AppendLog("⚠ Metrics heartbeat failed: " & ex.Message)
         End Try
@@ -405,7 +567,8 @@ Public Class main
             If Me.IsHandleCreated AndAlso Not Me.IsDisposed Then
                 Me.BeginInvoke(Async Sub()
                                    Try
-                                       Await UpdateHelper.CheckForUpdatesAndPrompt(Me, AddressOf AppendLog)
+                                       Await UpdateHelper.CheckForUpdatesAndPrompt(Me, AddressOf AppendLog,
+                                                                                   Function() monitorAutoUpdate IsNot Nothing AndAlso monitorAutoUpdate.Checked)
                                    Catch ex As Exception
                                        AppendLog("⚠ Auto-update check failed: " & ex.Message)
                                    Finally
@@ -529,6 +692,7 @@ Public Class main
         chatEmbed.Text = My.Settings.ChatEmbedSet
         errorEmbed.Text = My.Settings.ErrorEmbedSet
         questEmbed.Text = My.Settings.QuestEmbedSet
+        selfieEmbed.Text = My.Settings.SelfieEmbedSet
         chkMonitorChat.Checked = My.Settings.CheckChat
         monitorQuest.Checked = My.Settings.CheckQuest
         captureWin.Checked = My.Settings.TakeScreenshots
@@ -543,7 +707,10 @@ Public Class main
         obscureSS.Checked = My.Settings.BlurStats
         compositorSafe.Checked = My.Settings.CompositorSafe
         useDTM.Checked = My.Settings.useDTM
+        monitorAutoUpdate.Checked = My.Settings.AutoUpdate
         ScreenshotHelpers.UseCompositorSafe = compositorSafe.Checked
+        Me.KeyPreview = True
+        AddHandler Me.KeyDown, AddressOf _kp
 
         numSelfieInterval.Value = If(My.Settings.BotSelfieInterval > 0, My.Settings.BotSelfieInterval, 60)
         numIntervalSecond.Value = If(My.Settings.CheckInterval > 0, My.Settings.CheckInterval, 5)
@@ -603,9 +770,16 @@ Public Class main
             My.Settings.Save()
         End If
         taskEmbed.Text = My.Settings.TaskEmbedSet
+
+        If String.IsNullOrWhiteSpace(My.Settings.SelfieEmbedSet) Then
+            My.Settings.SelfieEmbedSet = DiscordHelpers.defaultSelfieTemplate
+            My.Settings.Save()
+        End If
+        selfieEmbed.Text = My.Settings.SelfieEmbedSet
         StartMetrics()
         Await FetchFailRules()
-        Await UpdateHelper.CheckForUpdatesAndPrompt(Me, AddressOf AppendLog)
+        Await UpdateHelper.CheckForUpdatesAndPrompt(Me, AddressOf AppendLog,
+                                                    Function() monitorAutoUpdate IsNot Nothing AndAlso monitorAutoUpdate.Checked)
         StartUpdateTimer()
     End Sub
     Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
@@ -625,7 +799,7 @@ Public Class main
         ScreenshotHelpers.UseCompositorSafe = compositorSafe.Checked
         My.Settings.CompositorSafe = compositorSafe.Checked
         My.Settings.Save()
-        AppendLog(If(compositorSafe.Checked, "Compositor Safe Mode: ON (WGC path + selfie jitter)", "Compositor Safe Mode: OFF (legacy mode)"))
+        AppendLog(If(compositorSafe.Checked, "Compositor Safe Mode: ON (WGC path)", "Compositor Safe Mode: OFF (Legacy/PrintWindow mode)"))
     End Sub
 
     Private Sub ToggleDarkMode(sender As Object, e As EventArgs) Handles DarkModeEnabled.CheckedChanged
@@ -739,6 +913,7 @@ Public Class main
         My.Settings.QuestID = questID.Text.Trim()
         My.Settings.ErrorID = errorID.Text.Trim()
         My.Settings.TaskID = taskID.Text.Trim()
+        My.Settings.SelfieEmbedSet = selfieEmbed.Text.Trim()
         My.Settings.SelfieID = selfieID.Text.Trim()
         My.Settings.LogFolderPath = txtLogDir.Text.Trim()
         My.Settings.CheckInterval = numIntervalSecond.Value
@@ -748,6 +923,7 @@ Public Class main
         My.Settings.MentionID = txtMention.Text.Trim()
         My.Settings.CompositorSafe = compositorSafe.Checked
         My.Settings.useDTM = useDTM.Checked
+        My.Settings.AutoUpdate = monitorAutoUpdate.Checked
         My.Settings.Save()
 
         WEBHOOK_URL = txtWebhook.Text.Trim()
@@ -1115,17 +1291,6 @@ Public Class main
                     Dim folderName As String = New IO.DirectoryInfo(accountFolder).Name
                     Dim accountName As String = folderName
 
-                    If compositorSafe.Checked Then
-                        Dim jitter As Integer
-                        SyncLock GetType(main)
-                            Dim r As New Random()
-                            Dim mag = r.Next(250, 501)
-                            Dim sign = If(r.Next(2) = 0, -1, 1)
-                            jitter = sign * mag
-                        End SyncLock
-                        If jitter > 0 Then Await Task.Delay(jitter)
-                    End If
-
                     If accountBreakStates.ContainsKey(folderName) AndAlso accountBreakStates(folderName) Then
                         AppendLog($"⏸ Skipping selfie for {folderName} (on break).")
                         Continue For
@@ -1157,8 +1322,31 @@ Public Class main
                         End If
                     End If
 
-                    Dim payload As String = "{""content"": ""📸 Periodic screenshot for account: " & accountName.Replace("""", "'"c) & """}"
+                    Dim tmpl As String = If(String.IsNullOrWhiteSpace(My.Settings.SelfieEmbedSet),
+                        DiscordHelpers.defaultSelfieTemplate,
+                        My.Settings.SelfieEmbedSet)
 
+                    Dim mention As String = ""
+                    Try
+                        If Me.IsHandleCreated AndAlso Not Me.IsDisposed Then
+                            Me.Invoke(Sub() mention = txtMention.Text.Trim())
+                        Else
+                            mention = My.Settings.MentionID
+                        End If
+                    Catch
+                        mention = My.Settings.MentionID
+                    End Try
+
+                    Dim payload As String = DiscordHelpers.BuildSelfiePayload(
+                                                                              tmpl,
+                                                                              mention:=mention,
+                                                                              fileName:=IO.Path.GetFileName(shotPath),
+                                                                              folder:=folderName,
+                                                                              accountName:=accountName,
+                                                                              timestamp:=DateTime.Now,
+                                                                              index:=1,
+                                                                              screenshotRef:=IO.Path.GetFileName(shotPath)
+                                                                              )
                     Await DiscordHelpers.UploadFile(effectiveWebhook, shotPath, payload, AddressOf AppendLog)
                     AppendLog($"✅ Uploaded selfie for {folderName}.")
 
@@ -1210,13 +1398,17 @@ Public Class main
         Public CheckSkillsErr As Boolean
         Public CheckQuestsErr As Boolean
         Public CheckChat As Boolean
+        Public CheckQuest As Boolean
         Public CheckTask As Boolean
+        Public DarkModeOn As Boolean
+        Public BlurStats As Boolean
+        Public monitorAutoUpdate As Boolean
+        Public compositorSafe As Boolean
         Public ChatEmbedSet As String
         Public ErrorEmbedSet As String
         Public QuestEmbedSet As String
         Public TaskEmbedSet As String
-        Public DarkModeOn As Boolean
-        Public BlurStats As Boolean
+        Public SelfieEmbedSet As String
         Public ThreadRoutes As List(Of ThreadRoute)
     End Class
 
@@ -1248,12 +1440,16 @@ Public Class main
             .CheckQuestsErr = questError.Checked,
             .CheckChat = chkMonitorChat.Checked,
             .CheckTask = monitorTask.Checked,
+            .CheckQuest = monitorQuest.Checked,
+            .DarkModeOn = DarkModeEnabled.Checked,
+            .BlurStats = obscureSS.Checked,
+            .monitorAutoUpdate = monitorAutoUpdate.Checked,
+            .compositorSafe = compositorSafe.Checked,
             .ChatEmbedSet = chatEmbed.Text,
             .ErrorEmbedSet = errorEmbed.Text,
             .QuestEmbedSet = questEmbed.Text,
             .TaskEmbedSet = taskEmbed.Text,
-            .DarkModeOn = DarkModeEnabled.Checked,
-            .BlurStats = obscureSS.Checked,
+            .SelfieEmbedSet = selfieEmbed.Text,
             .ThreadRoutes = threadRouteCache
         }
             Dim json = Newtonsoft.Json.JsonConvert.SerializeObject(cfg, Formatting.Indented)
@@ -1285,35 +1481,50 @@ Public Class main
                 AppendLog("⚠ Settings.cfg invalid; ignoring.")
                 Exit Sub
             End If
+            Dim root As JObject = JObject.Parse(json)
 
-            txtWebhook.Text = cfg.WebhookURL
-            txtMention.Text = cfg.MentionID
-            txtLogDir.Text = cfg.LogFolderPath
-            chatID.Text = cfg.ChatID
-            questID.Text = cfg.QuestID
-            errorID.Text = cfg.ErrorID
-            taskID.Text = cfg.TaskID
-            selfieID.Text = cfg.SelfieID
-            numIntervalSecond.Value = If(cfg.CheckInterval > 0, cfg.CheckInterval, numIntervalSecond.Value)
-            selfieMode.Checked = cfg.BotSelfie
-            numSelfieInterval.Value = If(cfg.BotSelfieInterval > 0, cfg.BotSelfieInterval, numSelfieInterval.Value)
-            captureWin.Checked = cfg.TakeScreenshots
-            autoClean.Checked = cfg.AutoDelete
-            combatError.Checked = cfg.CheckCombatErr
-            skillIssue.Checked = cfg.CheckSkillsErr
-            questError.Checked = cfg.CheckQuestsErr
-            chkMonitorChat.Checked = cfg.CheckChat
-            monitorTask.Checked = cfg.CheckTask
-            chatEmbed.Text = If(Not String.IsNullOrWhiteSpace(cfg.ChatEmbedSet), cfg.ChatEmbedSet, chatEmbed.Text)
-            errorEmbed.Text = If(Not String.IsNullOrWhiteSpace(cfg.ErrorEmbedSet), cfg.ErrorEmbedSet, errorEmbed.Text)
-            questEmbed.Text = If(Not String.IsNullOrWhiteSpace(cfg.QuestEmbedSet), cfg.QuestEmbedSet, questEmbed.Text)
-            taskEmbed.Text = If(Not String.IsNullOrWhiteSpace(cfg.TaskEmbedSet), cfg.TaskEmbedSet, taskEmbed.Text)
-            DarkModeEnabled.Checked = cfg.DarkModeOn
-            obscureSS.Checked = cfg.BlurStats
-
+            If root("WebhookURL") IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(CStr(root("WebhookURL"))) Then
+                txtWebhook.Text = CStr(root("WebhookURL"))
+            End If
+            If root("MentionID") IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(CStr(root("MentionID"))) Then
+                txtMention.Text = CStr(root("MentionID"))
+            End If
+            If root("LogFolderPath") IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(CStr(root("LogFolderPath"))) Then
+                txtLogDir.Text = CStr(root("LogFolderPath"))
+            End If
+            If root("ChatID") IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(CStr(root("ChatID"))) Then chatID.Text = CStr(root("ChatID"))
+            If root("QuestID") IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(CStr(root("QuestID"))) Then questID.Text = CStr(root("QuestID"))
+            If root("ErrorID") IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(CStr(root("ErrorID"))) Then errorID.Text = CStr(root("ErrorID"))
+            If root("TaskID") IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(CStr(root("TaskID"))) Then taskID.Text = CStr(root("TaskID"))
+            If root("SelfieID") IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(CStr(root("SelfieID"))) Then selfieID.Text = CStr(root("SelfieID"))
+            If root("CheckInterval") IsNot Nothing Then
+                Dim v As Integer = CInt(root("CheckInterval"))
+                If v > 0 Then numIntervalSecond.Value = v
+            End If
+            If root("BotSelfieInterval") IsNot Nothing Then
+                Dim v As Integer = CInt(root("BotSelfieInterval"))
+                If v > 0 Then numSelfieInterval.Value = v
+            End If
+            If root("ChatEmbedSet") IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(CStr(root("ChatEmbedSet"))) Then chatEmbed.Text = CStr(root("ChatEmbedSet"))
+            If root("ErrorEmbedSet") IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(CStr(root("ErrorEmbedSet"))) Then errorEmbed.Text = CStr(root("ErrorEmbedSet"))
+            If root("QuestEmbedSet") IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(CStr(root("QuestEmbedSet"))) Then questEmbed.Text = CStr(root("QuestEmbedSet"))
+            If root("TaskEmbedSet") IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(CStr(root("TaskEmbedSet"))) Then taskEmbed.Text = CStr(root("TaskEmbedSet"))
+            If root("SelfieEmbedSet") IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(CStr(root("SelfieEmbedSet"))) Then selfieEmbed.Text = CStr(root("SelfieEmbedSet"))
+            If root("CheckChat") IsNot Nothing Then chkMonitorChat.Checked = CBool(root("CheckChat"))
+            If root("CheckQuest") IsNot Nothing Then monitorQuest.Checked = CBool(root("CheckQuest"))
+            If root("CheckTask") IsNot Nothing Then monitorTask.Checked = CBool(root("CheckTask"))
+            If root("TakeScreenshots") IsNot Nothing Then captureWin.Checked = CBool(root("TakeScreenshots"))
+            If root("AutoDelete") IsNot Nothing Then autoClean.Checked = CBool(root("AutoDelete"))
+            If root("CheckCombatErr") IsNot Nothing Then combatError.Checked = CBool(root("CheckCombatErr"))
+            If root("CheckSkillsErr") IsNot Nothing Then skillIssue.Checked = CBool(root("CheckSkillsErr"))
+            If root("CheckQuestsErr") IsNot Nothing Then questError.Checked = CBool(root("CheckQuestsErr"))
+            If root("BotSelfie") IsNot Nothing Then selfieMode.Checked = CBool(root("BotSelfie"))
+            If root("DarkModeOn") IsNot Nothing Then DarkModeEnabled.Checked = CBool(root("DarkModeOn"))
+            If root("BlurStats") IsNot Nothing Then obscureSS.Checked = CBool(root("BlurStats"))
+            If root("useDTM") IsNot Nothing Then useDTM.Checked = CBool(root("useDTM"))
+            If root("AutoUpdate") IsNot Nothing Then monitorAutoUpdate.Checked = CBool(root("AutoUpdate"))
             SyncComboFromText()
             ApplyTheme(DarkModeEnabled.Checked)
-
             AppendLog("Settings.cfg loaded.")
         Catch ex As Exception
             AppendLog($"⚠ Failed to load settings.cfg: {ex.Message}")
@@ -1333,12 +1544,7 @@ Public Class main
         Return ParseFolders(My.Settings.LogFolderPath)
     End Function
 
-    Private Sub CommonButtons(sender As Object, e As EventArgs) Handles clearBtn.Click, wikiBtn.Click, p2pdiscordBtn.Click, dbdiscordBtn.Click, dbforumBtn.Click, p2psalesBtn.Click, p2psetupBtn.Click, p2psurvivalBtn.Click, p2pgearBtn.Click, monitorDiscord.Click
-
-        If sender Is clearBtn Then
-            txtLog.Clear()
-            Exit Sub
-        End If
+    Private Sub CommonButtons(sender As Object, e As EventArgs) Handles wikiBtn.Click, p2pdiscordBtn.Click, dbdiscordBtn.Click, dbforumBtn.Click, p2psalesBtn.Click, p2psetupBtn.Click, p2psurvivalBtn.Click, p2pgearBtn.Click, monitorDiscord.Click
 
         Dim url As String = Nothing
         Dim failMsg = ""
@@ -1384,14 +1590,19 @@ Public Class main
 
     Private Async Sub SendTestWebhooks(sender As Object, e As EventArgs) Handles testBtn.Click
         Dim webhookMap As New Dictionary(Of String, String) From {
-        {"Default Webhook", txtWebhook.Text.Trim}, {"Quest Webhook", questID.Text.Trim}, {"Error Webhook", errorID.Text.Trim}, {"Chat Webhook", chatID.Text.Trim}, {"Task Webhook", taskID.Text.Trim}, {"Selfie Webhook", selfieID.Text.Trim}
+        {"Default Webhook", txtWebhook.Text.Trim},
+        {"Quest Webhook", questID.Text.Trim},
+        {"Error Webhook", errorID.Text.Trim},
+        {"Chat Webhook", chatID.Text.Trim},
+        {"Task Webhook", taskID.Text.Trim},
+        {"Selfie Webhook", selfieID.Text.Trim}
     }
 
         For Each entry In webhookMap
             Dim name = entry.Key
             Dim url = entry.Value
 
-            If String.IsNullOrWhiteSpace(url) OrElse Not url.StartsWith("http") Then
+            If String.IsNullOrWhiteSpace(url) OrElse Not url.StartsWith("http", StringComparison.OrdinalIgnoreCase) Then
                 AppendLog($"⚠ {name} is empty or invalid, skipping.")
                 Continue For
             End If
@@ -1404,123 +1615,69 @@ Public Class main
             $"""description"": ""This is a test embed sent at {Date.Now}.""," &
             $"""color"": 6029136" &
             "}]}"
-            Try
-                Await DiscordHelpers.PostJson(url, payload)
+            ' Try
+            '   Await DiscordHelpers.PostJson(url, payload)
+            ' AppendLog($"✅ Test embed sent to {name}.")
+            ' Catch ex As Exception
+            'AppendLog($"❌ Failed to send test embed to {name}: {ex.Message}")
+            'End Try
+            Dim ok = Await DiscordHelpers.PostJsonOk(url, payload, AddressOf AppendLog)
+            If ok Then
                 AppendLog($"✅ Test embed sent to {name}.")
-            Catch ex As Exception
-                AppendLog($"❌ Failed to send test embed to {name}: {ex.Message}")
-            End Try
+            Else
+                AppendLog($"🚫 Test embed NOT sent to {name} (see error above).")
+            End If
         Next
 
-    End Sub
-    Private Async Sub testEmbeds_Click(sender As Object, e As EventArgs) Handles testEmbeds.Click
+        Dim nowTs As DateTime = DateTime.Now
+        Dim taskLine As String = "Simulated in-game task"
+        Dim activityLine As String = "Simulated activity"
         Dim filePath As String = "test_log.log"
         Dim filename As String = IO.Path.GetFileName(filePath)
-        Dim FailureType As String = "Test"
-        Dim trigger As String = "Simulated error trigger"
-        Dim reason As String = "Simulated error reason"
-        Dim chatLine As String = "Simulated chat line"
-        Dim respLine As String = "Simulated response line"
-        Dim taskLine As String = "Simulated Task"
-        Dim activityLine As String = "Simulated Activity"
-        Dim screenshotRef As String = "https://i.imgur.com/fRKkKy5.png"
+        Dim screenshotRef As String = ""
 
-        Dim errorWebhook As String = errorID.Text.Trim()
-        Dim chatWebhook As String = chatID.Text.Trim()
-        Dim questWebhook As String = questID.Text.Trim()
-        Dim taskWebhook As String = taskID.Text.Trim()
-        Dim selfieWebhook As String = selfieID.Text.Trim()
-
-        If Not String.IsNullOrWhiteSpace(errorEmbed.Text.Trim()) AndAlso Not String.IsNullOrWhiteSpace(errorWebhook) Then
-            Dim payload = DiscordHelpers.BuildErrorPayload(
-            errorEmbed.Text.Trim(),
-            DISCORD_MENTION,
-            FailureType,
-            trigger,
-            reason,
-            filename,
-            GetFolderName(filePath),
-            DateTime.Now
-        )
-
-            Dim err As String = Nothing
-            If DiscordHelpers.IsJson(payload, err) Then
-                Await DiscordHelpers.PostJson(errorWebhook, payload)
-                AppendLog("✅ Test Error embed sent.")
-            Else
-                AppendLog($"⚠ Invalid JSON in Error embed: {err}")
-            End If
-        End If
-
-        If Not String.IsNullOrWhiteSpace(chatEmbed.Text.Trim()) AndAlso Not String.IsNullOrWhiteSpace(chatWebhook) Then
-            Dim payload = DiscordHelpers.BuildChatPayload(
-            chatEmbed.Text.Trim(),
-            DISCORD_MENTION,
-            chatLine,
-            respLine,
-            screenshotRef,
-            filename,
-            GetFolderName(filePath),
-            DateTime.Now,
-            1
-        )
-
-            Dim err As String = Nothing
-            If DiscordHelpers.IsJson(payload, err) Then
-                Await DiscordHelpers.PostJson(chatWebhook, payload)
-                AppendLog("✅ Test Chat embed sent.")
-            Else
-                AppendLog($"⚠ Invalid JSON in Chat embed: {err}")
-            End If
-        End If
-
-        If Not String.IsNullOrWhiteSpace(questEmbed.Text.Trim()) AndAlso Not String.IsNullOrWhiteSpace(questWebhook) Then
+        If Not String.IsNullOrWhiteSpace(questEmbed.Text.Trim()) AndAlso Not String.IsNullOrWhiteSpace(questID.Text.Trim()) Then
             Dim payload = DiscordHelpers.BuildQuestPayload(
-            questEmbed.Text.Trim(),
-            DISCORD_MENTION,
-            "Simulated quest text",
-            screenshotRef,
-            filename,
-            GetFolderName(filePath),
-            DateTime.Now,
-            1
-        )
-
+            questEmbed.Text.Trim(), DISCORD_MENTION, "Simulated quest text", screenshotRef,
+            filename, GetFolderName(filePath), nowTs, 1)
             Dim err As String = Nothing
+            'If DiscordHelpers.IsJson(payload, err) Then
+            'Await DiscordHelpers.PostJson(questID.Text.Trim(), payload)
+            'AppendLog("✅ Test Quest embed sent.")
+            'Else
+            'AppendLog($"⚠ Invalid JSON in Quest embed: {err}")
+            'End If
             If DiscordHelpers.IsJson(payload, err) Then
-                Await DiscordHelpers.PostJson(questWebhook, payload)
-                AppendLog("✅ Test Quest embed sent.")
+                Dim ok = Await DiscordHelpers.PostJsonOk(questID.Text.Trim(), payload, AddressOf AppendLog)
+                AppendLog(If(ok, "✅ Test Quest embed sent.", "🚫 Test Quest embed failed (see error above)."))
             Else
                 AppendLog($"⚠ Invalid JSON in Quest embed: {err}")
             End If
         End If
 
-        If Not String.IsNullOrWhiteSpace(taskEmbed.Text.Trim()) AndAlso Not String.IsNullOrWhiteSpace(taskWebhook) Then
+        If Not String.IsNullOrWhiteSpace(taskEmbed.Text.Trim()) AndAlso Not String.IsNullOrWhiteSpace(taskID.Text.Trim()) Then
             Dim payload = DiscordHelpers.BuildTaskPayload(
-            taskEmbed.Text.Trim(),
-            DISCORD_MENTION,
-            taskLine,
-            activityLine,
-            screenshotRef,
-            filename,
-            GetFolderName(filePath),
-            DateTime.Now,
-            1
-        )
-
+            taskEmbed.Text.Trim(), DISCORD_MENTION, taskLine, activityLine, screenshotRef,
+            filename, GetFolderName(filePath), nowTs, 1)
             Dim err As String = Nothing
+            'If DiscordHelpers.IsJson(payload, err) Then
+            'Await DiscordHelpers.PostJson(taskID.Text.Trim(), payload)
+            'AppendLog("✅ Test Task embed sent (Task webhook).")
+            'Else
+            'AppendLog($"⚠ Invalid JSON in Task embed: {err}")
+            'End If
             If DiscordHelpers.IsJson(payload, err) Then
-                Await DiscordHelpers.PostJson(taskWebhook, payload)
-                AppendLog("✅ Test Task embed sent (Task webhook).")
+                Dim ok = Await DiscordHelpers.PostJsonOk(taskID.Text.Trim(), payload, AddressOf AppendLog)
+                AppendLog(If(ok, "✅ Test Task embed sent (Task webhook).", "🚫 Test Task embed failed (see error above)."))
             Else
                 AppendLog($"⚠ Invalid JSON in Task embed: {err}")
             End If
         End If
 
-        If Not String.IsNullOrWhiteSpace(selfieWebhook) AndAlso selfieWebhook.StartsWith("http", StringComparison.OrdinalIgnoreCase) Then
+        If Not String.IsNullOrWhiteSpace(selfieID.Text.Trim()) AndAlso selfieID.Text.Trim().StartsWith("http", StringComparison.OrdinalIgnoreCase) Then
             Dim selfiePayload As String = "{""content"": ""Test Selfie""}"
             Try
-                Await DiscordHelpers.PostJson(selfieWebhook, selfiePayload)
+                Await DiscordHelpers.PostJson(selfieID.Text.Trim(), selfiePayload)
                 AppendLog("✅ Test Selfie message sent (Selfie webhook).")
             Catch ex As Exception
                 AppendLog("❌ Failed to send Test Selfie message: " & ex.Message)
@@ -1528,15 +1685,143 @@ Public Class main
         Else
             AppendLog("ℹ Selfie webhook empty/invalid; skipping Test Selfie.")
         End If
+
+        If useDTM.Checked Then
+            If threadRouteMap Is Nothing OrElse threadRouteMap.Count = 0 Then
+                AppendLog("ℹ Use Discord Threads is ON, but no routes are configured; skipping DTM tests.")
+                Exit Sub
+            End If
+
+            ' For selfies we can't use ResolveWebhookFor (no 'selfie' category there), so prepare a tiny helper:
+            Dim EffectiveBase As Func(Of ThreadRoute, String) =
+                Function(r As ThreadRoute) As String
+                    Dim baseUrlLocal As String = txtWebhook.Text.Trim()
+                    If r IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(r.ForumWebhook) Then
+                        baseUrlLocal = r.ForumWebhook
+                    End If
+                    Return baseUrlLocal
+                End Function
+
+            For Each kv In threadRouteMap
+                Dim account As String = kv.Key
+                Dim route = kv.Value
+                Dim fakePath As String = IO.Path.Combine("C:\DTMTest", account, "logfile-test.log")
+                Dim acctFilename As String = IO.Path.GetFileName(fakePath)
+
+                If route.ShowChats Then
+                    Dim payload = DiscordHelpers.BuildChatPayload(
+                    chatEmbed.Text, DISCORD_MENTION,
+                    "Simulated chat line", "Simulated response", screenshotRef,
+                    acctFilename, account, nowTs, 1)
+                    Dim target = ResolveWebhookFor("Chat", WEBHOOK_URL, account)
+                    If Not String.IsNullOrWhiteSpace(target) Then
+                        Dim err As String = Nothing
+                        Dim ok = Await DiscordHelpers.PostJsonOk(target, payload, AddressOf AppendLog)
+                        If ok Then
+                            AppendLog($"✅ DTM test Chat sent for '{account}'.")
+                        Else
+                            AppendLog($"🚫 DTM test Chat failed for '{account}' (see error above).")
+                        End If
+                    Else
+                        AppendLog($"🚫 Chat disabled by Thread Manager for '{account}'.")
+                    End If
+                End If
+
+                If route.ShowQuests Then
+                    Dim payload = DiscordHelpers.BuildQuestPayload(
+                    questEmbed.Text, DISCORD_MENTION,
+                    "Simulated quest text", screenshotRef,
+                    acctFilename, account, nowTs, 1)
+                    Dim target = ResolveWebhookFor("Quest", WEBHOOK_URL, account)
+                    If Not String.IsNullOrWhiteSpace(target) Then
+                        Dim err As String = Nothing
+                        Dim ok = Await DiscordHelpers.PostJsonOk(target, payload, AddressOf AppendLog)
+                        If ok Then
+                            AppendLog($"✅ DTM test Quest sent for '{account}'.")
+                        Else
+                            AppendLog($"🚫 DTM test Quest failed for '{account}' (see error above).")
+                        End If
+                    Else
+                        AppendLog($"🚫 Quest disabled by Thread Manager for '{account}'.")
+                    End If
+                End If
+
+                If route.ShowTasks Then
+                    Dim payload = DiscordHelpers.BuildTaskPayload(
+                    taskEmbed.Text, DISCORD_MENTION,
+                    taskLine, activityLine, screenshotRef,
+                    acctFilename, account, nowTs, 1)
+                    Dim target = ResolveWebhookFor("Task", WEBHOOK_URL, account)
+                    If Not String.IsNullOrWhiteSpace(target) Then
+                        Dim err As String = Nothing
+                        Dim ok = Await DiscordHelpers.PostJsonOk(target, payload, AddressOf AppendLog)
+                        If ok Then
+                            AppendLog($"✅ DTM test Task sent for '{account}'.")
+                        Else
+                            AppendLog($"🚫 DTM test Task failed for '{account}' (see error above).")
+                        End If
+                    Else
+                        AppendLog($"🚫 Task disabled by Thread Manager for '{account}'.")
+                    End If
+                End If
+
+                If route.ShowErrors Then
+                    Dim payload = DiscordHelpers.BuildErrorPayload(
+                    errorEmbed.Text, DISCORD_MENTION,
+                    "Test Error", "Simulated trigger", "Simulated reason",
+                    acctFilename, account, nowTs)
+                    Dim target = ResolveWebhookFor("Error", WEBHOOK_URL, account)
+                    If Not String.IsNullOrWhiteSpace(target) Then
+                        Dim err As String = Nothing
+                        Dim ok = Await DiscordHelpers.PostJsonOk(target, payload, AddressOf AppendLog)
+                        If ok Then
+                            AppendLog($"✅ DTM test Error sent for '{account}'.")
+                        Else
+                            AppendLog($"🚫 DTM test Error failed for '{account}' (see error above).")
+                        End If
+                    Else
+                        AppendLog($"🚫 Error disabled by Thread Manager for '{account}'.")
+                    End If
+                End If
+
+                If route.ShowSelfies Then
+                    Dim baseUrlDTM As String = EffectiveBase(route)
+                    If Not String.IsNullOrWhiteSpace(baseUrlDTM) AndAlso
+                    baseUrlDTM.StartsWith("http", StringComparison.OrdinalIgnoreCase) AndAlso Not String.IsNullOrWhiteSpace(route.SelfiesId) Then
+                        Dim selfieUrl As String = DiscordHelpers.WithThreadId(baseUrlDTM, route.SelfiesId)
+                        Dim tmplSelfie As String = If(String.IsNullOrWhiteSpace(selfieEmbed.Text),
+                                      DiscordHelpers.defaultSelfieTemplate,
+                                      selfieEmbed.Text)
+
+                        Dim selfiePayload As String = DiscordHelpers.BuildSelfiePayload(
+                                                                                        template:=tmplSelfie,
+                                                                                        mention:=DISCORD_MENTION,
+                                                                                        fileName:=acctFilename,
+                                                                                        folder:=account,
+                                                                                        accountName:=account,
+                                                                                        timestamp:=nowTs,
+                                                                                        index:=1,
+                                                                                        screenshotRef:="")
+                        Try
+                            Await DiscordHelpers.PostJson(selfieUrl, selfiePayload)
+                            AppendLog($"✅ DTM test Selfie sent for '{account}'.")
+                        Catch ex As Exception
+                            AppendLog($"❌ Failed to send DTM test Selfie for '{account}': {ex.Message}")
+                        End Try
+                    Else
+                        AppendLog($"🚫 Selfie disabled or missing thread id for '{account}'.")
+                    End If
+                End If
+            Next
+        End If
     End Sub
+
 
     Private Sub embedEditors_Click(sender As Object, e As EventArgs) Handles embedEditors.Click
         Dim selector As New EmbedSelector()
         selector.ShowDialog(Me)
     End Sub
-    Private Async Sub btnCheckUpdates_Click(sender As Object, e As EventArgs) Handles btnCheckUpdates.Click
-        Await UpdateHelper.CheckForUpdatesAndPrompt(Me, AddressOf AppendLog, forcePrompt:=True)
-    End Sub
+
     Private Sub btnCleanLog_Click(sender As Object, e As EventArgs) Handles btnCleanLog.Click
         Try
             Using dlg As New CleanLogForm(LOG_DIR, AddressOf AppendLog)

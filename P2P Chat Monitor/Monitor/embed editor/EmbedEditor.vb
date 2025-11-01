@@ -12,7 +12,7 @@ Public Class EmbedSelector
         Me.StartPosition = FormStartPosition.CenterParent
         Me.Text = "Select Embed to Edit"
         Me.Width = 225
-        Me.Height = 325
+        Me.Height = 375
 
         Dim pnl As New FlowLayoutPanel() With {
             .Dock = DockStyle.Fill,
@@ -33,7 +33,10 @@ Public Class EmbedSelector
         Dim btnFailure As New MaterialButton() With {.Text = "Edit Error Embed", .AutoSize = True}
         AddHandler btnFailure.Click, Sub() OpenEditor("ErrorEmbed", My.Settings.ErrorEmbedSet)
 
-        pnl.Controls.AddRange(New Control() {btnTask, btnChat, btnQuest, btnFailure})
+        Dim btnSelfie As New MaterialButton() With {.Text = "Edit Selfie Embed", .AutoSize = True}
+        AddHandler btnSelfie.Click, Sub() OpenEditor("SelfieEmbed", My.Settings.SelfieEmbedSet)
+
+        pnl.Controls.AddRange(New Control() {btnTask, btnChat, btnQuest, btnFailure, btnSelfie})
         Me.Controls.Add(pnl)
     End Sub
 
@@ -45,6 +48,7 @@ Public Class EmbedSelector
                 Case "ChatEmbed" : My.Settings.ChatEmbedSet = editor.ResultText
                 Case "QuestEmbed" : My.Settings.QuestEmbedSet = editor.ResultText
                 Case "FailureEmbed" : My.Settings.ErrorEmbedSet = editor.ResultText
+                Case "SelfieEmbed" : My.Settings.SelfieEmbedSet = editor.ResultText
             End Select
             My.Settings.Save()
         End If

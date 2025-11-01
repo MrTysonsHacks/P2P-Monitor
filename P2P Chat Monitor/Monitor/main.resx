@@ -117,6 +117,147 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="taskEmbed.Text" xml:space="preserve">
+    <value>{
+  "content": "",
+  "tts": false,
+  "embeds": [
+    {
+      "id": 244061115,
+      "description": "&lt;@{mention}&gt; - Detected P2P AI Chat Event\n\nLog: **{filename}**\nAccount: **{folder}**\n\n",
+      "fields": [
+        {
+          "id": 495459941,
+          "name": "Chat:",
+          "value": "{chat}",
+          "inline": false
+        },
+        {
+          "id": 617834865,
+          "name": "",
+          "value": ""
+        },
+        {
+          "id": 177252030,
+          "name": "Response:",
+          "value": "{response}"
+        }
+      ],
+      "title": "P2P AI Chat Event",
+      "footer": {
+        "text": "P2P Monitor Detection system - {time}"
+      },
+      "image": {
+        "url": "{screenshot}"
+      },
+      "color": 6029136
+    }
+  ],
+  "components": [],
+  "actions": {},
+  "flags": 0
+}</value>
+  </data>
+  <data name="errorEmbed.Text" xml:space="preserve">
+    <value>{
+  "content": "",
+  "tts": false,
+  "embeds": [
+    {
+      "id": 244061115,
+      "title": "P2P AI Error Detected",
+      "description": "&lt;@{mention}&gt; - Detected P2P AI {type} Error\n\nLog: **{filename}**\nAccount: **{folder}**\n\n",
+      "color": 16711680,
+      "footer": {
+        "text": "P2P Monitor Detection System - {time}"
+      },
+      "image": {
+        "url": "{screenshot}"
+      },
+      "fields": [
+        {
+          "id": 495459941,
+          "name": "Error Trigger:",
+          "value": "{trigger}",
+          "inline": false
+        },
+        {
+          "id": 288637019,
+          "name": "Error Reason:",
+          "value": "{reason}"
+        }
+      ]
+    }
+  ],
+  "components": [],
+  "actions": {},
+  "flags": 0
+}</value>
+  </data>
+  <data name="chatEmbed.Text" xml:space="preserve">
+    <value>{
+  "content": "",
+  "tts": false,
+  "embeds": [
+    {
+      "id": 244061115,
+      "description": "&lt;@{mention}&gt; - Detected P2P AI Chat Event\n\nLog: **{filename}**\nAccount: **{folder}**\n\n",
+      "fields": [
+        {
+          "id": 495459941,
+          "name": "Chat:",
+          "value": "{chat}",
+          "inline": false
+        },
+        {
+          "id": 617834865,
+          "name": "",
+          "value": ""
+        },
+        {
+          "id": 177252030,
+          "name": "Response:",
+          "value": "{response}"
+        }
+      ],
+      "title": "P2P AI Chat Event",
+      "footer": {
+        "text": "P2P Monitor Detection system - {time}"
+      },
+      "image": {
+        "url": "{screenshot}"
+      },
+      "color": 6029136
+    }
+  ],
+  "components": [],
+  "actions": {},
+  "flags": 0
+}</value>
+  </data>
+  <data name="questEmbed.Text" xml:space="preserve">
+    <value>{
+  "content": "",
+  "tts": false,
+  "embeds": [
+    {
+      "title": "P2P AI Quest Completion",
+      "description": "&lt;@{mention}&gt; - Detected P2P AI Quest Completion\n\nLog: **{filename}**\nAccount: **{folder}**\n\n",
+      "fields": [
+        {
+          "name": "Quest Completed:",
+          "value": "{segment}",
+          "inline": false
+        }
+      ],
+      "footer": {
+        "text": "P2P Monitor Detection System - {time}"
+      },
+      "color": 6029136
+    }
+  ]
+}</value>
+  </data>
   <data name="MaterialMultiLineTextBox1.Text" xml:space="preserve">
     <value>Embed API
 
@@ -170,7 +311,7 @@ Replaced with an attachment reference to the captured screenshot of the DreamBot
         AAEAAAD/////AQAAAAAAAAAMAgAAAEZTeXN0ZW0uV2luZG93cy5Gb3JtcywgQ3VsdHVyZT1uZXV0cmFs
         LCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5BQEAAAAmU3lzdGVtLldpbmRvd3MuRm9ybXMu
         SW1hZ2VMaXN0U3RyZWFtZXIBAAAABERhdGEHAgIAAAAJAwAAAA8DAAAAvkEAAAJNU0Z0AUkBTAIBAQQB
-        AAFwAQUBcAEFASQBAAEkAQAE/wEhAQAI/wFCAU0BNgcAATYDAAEoAwABkAMAAUgDAAEBAQABIAYAAaL/
+        AAHIAQUByAEFASQBAAEkAQAE/wEhAQAI/wFCAU0BNgcAATYDAAEoAwABkAMAAUgDAAEBAQABIAYAAaL/
         AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/
         AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/
         AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wCTAAMaASQDPwFtA1MBpwNeAdID
@@ -452,147 +593,6 @@ Replaced with an attachment reference to the captured screenshot of the DreamBot
         /wIAAf8CAAEPAf8BgAIAAf8BAAE/Af8BwAEPBP8CAAH/AYABAAEfBf8BAAE/Af8BwAEPBP8CAAH/AfAB
         AAb/AYABPwH/AcABHwT/AgAL
 </value>
-  </data>
-  <data name="questEmbed.Text" xml:space="preserve">
-    <value>{
-  "content": "",
-  "tts": false,
-  "embeds": [
-    {
-      "title": "P2P AI Quest Completion",
-      "description": "&lt;@{mention}&gt; - Detected P2P AI Quest Completion\n\nLog: **{filename}**\nAccount: **{folder}**\n\n",
-      "fields": [
-        {
-          "name": "Quest Completed:",
-          "value": "{segment}",
-          "inline": false
-        }
-      ],
-      "footer": {
-        "text": "P2P Monitor Detection System - {time}"
-      },
-      "color": 6029136
-    }
-  ]
-}</value>
-  </data>
-  <data name="chatEmbed.Text" xml:space="preserve">
-    <value>{
-  "content": "",
-  "tts": false,
-  "embeds": [
-    {
-      "id": 244061115,
-      "description": "&lt;@{mention}&gt; - Detected P2P AI Chat Event\n\nLog: **{filename}**\nAccount: **{folder}**\n\n",
-      "fields": [
-        {
-          "id": 495459941,
-          "name": "Chat:",
-          "value": "{chat}",
-          "inline": false
-        },
-        {
-          "id": 617834865,
-          "name": "",
-          "value": ""
-        },
-        {
-          "id": 177252030,
-          "name": "Response:",
-          "value": "{response}"
-        }
-      ],
-      "title": "P2P AI Chat Event",
-      "footer": {
-        "text": "P2P Monitor Detection system - {time}"
-      },
-      "image": {
-        "url": "{screenshot}"
-      },
-      "color": 6029136
-    }
-  ],
-  "components": [],
-  "actions": {},
-  "flags": 0
-}</value>
-  </data>
-  <data name="errorEmbed.Text" xml:space="preserve">
-    <value>{
-  "content": "",
-  "tts": false,
-  "embeds": [
-    {
-      "id": 244061115,
-      "title": "P2P AI Error Detected",
-      "description": "&lt;@{mention}&gt; - Detected P2P AI {type} Error\n\nLog: **{filename}**\nAccount: **{folder}**\n\n",
-      "color": 16711680,
-      "footer": {
-        "text": "P2P Monitor Detection System - {time}"
-      },
-      "image": {
-        "url": "{screenshot}"
-      },
-      "fields": [
-        {
-          "id": 495459941,
-          "name": "Error Trigger:",
-          "value": "{trigger}",
-          "inline": false
-        },
-        {
-          "id": 288637019,
-          "name": "Error Reason:",
-          "value": "{reason}"
-        }
-      ]
-    }
-  ],
-  "components": [],
-  "actions": {},
-  "flags": 0
-}</value>
-  </data>
-  <data name="taskEmbed.Text" xml:space="preserve">
-    <value>{
-  "content": "",
-  "tts": false,
-  "embeds": [
-    {
-      "id": 244061115,
-      "description": "&lt;@{mention}&gt; - Detected P2P AI Chat Event\n\nLog: **{filename}**\nAccount: **{folder}**\n\n",
-      "fields": [
-        {
-          "id": 495459941,
-          "name": "Chat:",
-          "value": "{chat}",
-          "inline": false
-        },
-        {
-          "id": 617834865,
-          "name": "",
-          "value": ""
-        },
-        {
-          "id": 177252030,
-          "name": "Response:",
-          "value": "{response}"
-        }
-      ],
-      "title": "P2P AI Chat Event",
-      "footer": {
-        "text": "P2P Monitor Detection system - {time}"
-      },
-      "image": {
-        "url": "{screenshot}"
-      },
-      "color": 6029136
-    }
-  ],
-  "components": [],
-  "actions": {},
-  "flags": 0
-}</value>
   </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">

@@ -1,13 +1,17 @@
 Imports System.IO
 Imports System.Text.RegularExpressions
 Imports System.Collections.Generic
+Imports System.Collections.Concurrent
+Imports System.Linq
 
 Public Class LogHelper
 
     Private Shared ReadOnly LogLevels As HashSet(Of String) =
         New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {"INFO", "DEBUG", "WARN", "ERROR", "TRACE", "FATAL"}
-
     Private Shared ReadOnly SeenLogs As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+    Private Shared ReadOnly _pathLocks As New ConcurrentDictionary(Of String, Threading.SemaphoreSlim)(StringComparer.OrdinalIgnoreCase)
+    Private Shared ReadOnly _recentTasks As New ConcurrentDictionary(Of String, DateTime)(StringComparer.OrdinalIgnoreCase)
+    Private Shared ReadOnly _taskDedupeWindow As TimeSpan = TimeSpan.FromSeconds(5)
 
     Public Shared Sub ResetSeen()
         SeenLogs.Clear()
@@ -81,8 +85,10 @@ Public Class LogHelper
                                          GetFolderName As Func(Of String, String)) As Task(Of Boolean)
 
         If Not monitoring Then Return False
+        Dim path As String = e.FullPath
+        Dim gate = _pathLocks.GetOrAdd(path, Function(_k) New Threading.SemaphoreSlim(1, 1))
+        Await gate.WaitAsync().ConfigureAwait(False)
         Try
-            Dim path As String = e.FullPath
             If Not File.Exists(path) Then Return False
 
             If Not lastOffsets.ContainsKey(path) Then
@@ -171,6 +177,27 @@ Public Class LogHelper
                     For Each pair In taskPairs
                         taskSegments.Add(New List(Of String)(pair))
                     Next
+
+                    Dim now As DateTime = DateTime.UtcNow
+                    Dim filtered As New List(Of List(Of String))()
+                    For Each seg In taskSegments
+                        Dim taskText As String = If(seg.Count > 0, seg(0), "")
+                        Dim activityText As String = If(seg.Count > 1, seg(1), "")
+                        Dim key As String = $"{folderName}|{taskText}|{activityText}"
+
+                        Dim lastSent As DateTime
+                        If _recentTasks.TryGetValue(key, lastSent) Then
+                            If (now - lastSent) < _taskDedupeWindow Then
+                                Continue For
+                            End If
+                        End If
+
+                        _recentTasks(key) = now
+                        filtered.Add(seg)
+                    Next
+
+                    If filtered.Count = 0 Then Return True
+
                     Dim screenshotPath As String = ""
                     If takeScreenshots Then
                         Dim logRoot As String = System.IO.Path.GetDirectoryName(path)
@@ -183,8 +210,8 @@ Public Class LogHelper
                         End If
                     End If
 
-                    AppendLog($"📝 Found {taskSegments.Count} task(s)")
-                    Await SendSegments(taskSegments, path, "Task Event", &H57F287, screenshotPath)
+                    AppendLog($"📝 Found {filtered.Count} task(s)")
+                    Await SendSegments(filtered, path, "Task Event", &H57F287, screenshotPath)
                 End If
             End If
 
@@ -227,6 +254,8 @@ Public Class LogHelper
 
         Catch ex As Exception
             AppendLog("Watcher error: " & ex.Message)
+        Finally
+            gate.Release()
         End Try
         Return True
     End Function

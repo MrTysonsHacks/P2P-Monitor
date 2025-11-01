@@ -88,6 +88,26 @@ Partial Class DiscordThreadManager
         ReloadAccountsFromSettings()
         RefreshAllAccountCombos()
         AddHandler add1.Click, AddressOf AddManagedAccount_Click
+        AddHandler mainSave.Click, Sub(_s, _e)
+                                       Try
+                                           SaveRoutesToCfg()
+                                           Try
+                                               Dim m = TryCast(Me.Owner, main)
+                                               If m IsNot Nothing Then
+                                                   m.AppendLog("DTM Saved")
+                                               End If
+                                           Catch
+                                           End Try
+                                           Me.Close()
+                                       Catch ex As Exception
+                                           Try
+                                               Dim m = TryCast(Me.Owner, main)
+                                               If m IsNot Nothing Then m.AppendLog("DTM save failed: " & ex.Message)
+                                           Catch
+                                           End Try
+                                           Me.Close()
+                                       End Try
+                                   End Sub
         AddHandler canvas.Resize, Sub() LayoutCards()
         AddHandler Me.Resize, Sub() LayoutCards()
         LayoutCards()

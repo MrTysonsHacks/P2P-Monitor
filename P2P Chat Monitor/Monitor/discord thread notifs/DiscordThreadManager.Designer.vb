@@ -31,12 +31,14 @@ Partial Class DiscordThreadManager
         btnThreadIDs = New MaterialSkin.Controls.MaterialButton()
         btnMonitorOptions = New MaterialSkin.Controls.MaterialButton()
         add1 = New MaterialSkin.Controls.MaterialButton()
+        mainSave = New MaterialSkin.Controls.MaterialButton()
         canvas.SuspendLayout()
         managedAccount1.SuspendLayout()
         SuspendLayout()
         ' 
         ' canvas
         ' 
+        canvas.Controls.Add(mainSave)
         canvas.Controls.Add(managedAccount1)
         canvas.Controls.Add(add1)
         canvas.Dock = DockStyle.Fill
@@ -178,6 +180,25 @@ Partial Class DiscordThreadManager
         add1.UseAccentColor = False
         add1.UseVisualStyleBackColor = True
         ' 
+        ' mainSave
+        ' 
+        mainSave.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        mainSave.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default
+        mainSave.Depth = 0
+        mainSave.HighEmphasis = True
+        mainSave.Icon = Nothing
+        mainSave.Location = New Point(189, 6)
+        mainSave.Margin = New Padding(4, 6, 4, 6)
+        mainSave.MouseState = MaterialSkin.MouseState.HOVER
+        mainSave.Name = "mainSave"
+        mainSave.NoAccentTextColor = Color.Empty
+        mainSave.Size = New Size(95, 36)
+        mainSave.TabIndex = 11
+        mainSave.Text = "Save"
+        mainSave.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained
+        mainSave.UseAccentColor = False
+        mainSave.UseVisualStyleBackColor = True
+        ' 
         ' DiscordThreadManager
         ' 
         AutoScaleDimensions = New SizeF(96.0F, 96.0F)
@@ -194,6 +215,7 @@ Partial Class DiscordThreadManager
         StartPosition = FormStartPosition.CenterParent
         Text = "Discord Thread Manager"
         canvas.ResumeLayout(False)
+        canvas.PerformLayout()
         managedAccount1.ResumeLayout(False)
         managedAccount1.PerformLayout()
         ResumeLayout(False)
@@ -208,4 +230,5 @@ Partial Class DiscordThreadManager
     Friend WithEvents btnThreadIDs As MaterialSkin.Controls.MaterialButton
     Friend WithEvents btnMonitorOptions As MaterialSkin.Controls.MaterialButton
     Friend WithEvents managedAccount1 As MaterialSkin.Controls.MaterialCard
+    Friend WithEvents mainSave As MaterialSkin.Controls.MaterialButton
 End Class

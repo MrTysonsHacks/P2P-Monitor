@@ -481,7 +481,7 @@ Public Class ScreenshotHelpers
         Try
             Dim jsonPath As String = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "DreamBot", "BotData", "settings.json")
             If Not IO.File.Exists(jsonPath) Then
-                log?.Invoke($"ℹ settings.json not found at {jsonPath}")
+                main.AppendLog($"ℹ settings.json not found at {jsonPath}")
                 Return False
             End If
 
@@ -510,11 +510,9 @@ Public Class ScreenshotHelpers
                     outH = Math.Max(1, h)
                 End If
             End If
-
-            log?.Invoke($"settings.json parsed → size={outW}x{outH}, developerMode={devMode}, mtime={IO.File.GetLastWriteTime(jsonPath):yyyy-MM-dd HH:mm:ss}")
             Return True
         Catch ex As Exception
-            log?.Invoke($"⚠ settings.json parse error: {ex.Message}")
+            main.AppendLog($"⚠ settings.json parse error: {ex.Message}")
             Return False
         End Try
     End Function
@@ -526,7 +524,7 @@ Public Class ScreenshotHelpers
                 Try
                     bmp = TryWgcBitmap(hWnd, log)
                 Catch ex As Exception
-                    log?.Invoke($"ℹ WGC capture failed, reverting to legacy: {ex.Message}")
+                    main.AppendLog($"ℹ WGC capture failed, reverting to legacy: {ex.Message}")
                 End Try
                 If bmp IsNot Nothing Then Return bmp
                 Return Await Task.Run(Function() TryPrintWindowBitmap(hWnd, log))
@@ -542,17 +540,17 @@ Public Class ScreenshotHelpers
         If hWnd = IntPtr.Zero Then Return Nothing
 
         If IsIconic(hWnd) Then
-            log?.Invoke("ℹ Skipping WGC capture (window minimized).")
+            main.AppendLog("ℹ Skipping WGC capture (window minimized).")
             Return Nothing
         End If
 
         Try
             If Not GraphicsCaptureSession.IsSupported Then
-                log?.Invoke("ℹ WGC not supported on this OS.")
+                main.AppendLog("ℹ WGC not supported on this OS.")
                 Return Nothing
             End If
         Catch
-            log?.Invoke("ℹ WGC types not available (add Microsoft.Windows.SDK.*).")
+            main.AppendLog("ℹ WGC types not available (add Microsoft.Windows.SDK.*).")
             Return Nothing
         End Try
 
@@ -575,7 +573,7 @@ Public Class ScreenshotHelpers
                                D3D11_CREATE_DEVICE_BGRA_SUPPORT, IntPtr.Zero, 0,
                                D3D11_SDK_VERSION, d3dDevicePtr, fl, d3dCtxPtr)
             If hr <> 0 OrElse d3dDevicePtr = IntPtr.Zero Then
-                log?.Invoke($"⚠ D3D11CreateDevice failed (hr=0x{hr:X8}).")
+                main.AppendLog($"⚠ D3D11CreateDevice failed (hr=0x{hr:X8}).")
                 Return Nothing
             End If
         End If
@@ -584,7 +582,7 @@ Public Class ScreenshotHelpers
 
         Marshal.QueryInterface(d3dDevicePtr, IID_IDXGIDevice, dxgiDevicePtr)
         If dxgiDevicePtr = IntPtr.Zero Then
-            log?.Invoke("⚠ QueryInterface(IDXGIDevice) failed.")
+            main.AppendLog("⚠ QueryInterface(IDXGIDevice) failed.")
             If d3dCtxPtr <> IntPtr.Zero Then Marshal.Release(d3dCtxPtr)
             Marshal.Release(d3dDevicePtr)
             Return Nothing
@@ -593,7 +591,7 @@ Public Class ScreenshotHelpers
         Dim winrtDevicePtr As IntPtr = IntPtr.Zero
         hr = CreateDirect3D11DeviceFromDXGIDevice(dxgiDevicePtr, winrtDevicePtr)
         If hr <> 0 OrElse winrtDevicePtr = IntPtr.Zero Then
-            log?.Invoke($"⚠ CreateDirect3D11DeviceFromDXGIDevice failed (hr=0x{hr:X8}).")
+            main.AppendLog($"⚠ CreateDirect3D11DeviceFromDXGIDevice failed (hr=0x{hr:X8}).")
             Marshal.Release(dxgiDevicePtr)
             If d3dCtxPtr <> IntPtr.Zero Then Marshal.Release(d3dCtxPtr)
             Marshal.Release(d3dDevicePtr)
@@ -605,7 +603,7 @@ Public Class ScreenshotHelpers
         Try
             winrtDevice = Global.WinRT.MarshalInterface(Of Windows.Graphics.DirectX.Direct3D11.IDirect3DDevice).FromAbi(winrtDevicePtr)
         Catch ex As Exception
-            log?.Invoke("⚠ Failed to project ABI to IDirect3DDevice: " & ex.Message)
+            main.AppendLog("⚠ Failed to project ABI to IDirect3DDevice: " & ex.Message)
             Marshal.Release(winrtDevicePtr)
             Marshal.Release(dxgiDevicePtr)
             If d3dCtxPtr <> IntPtr.Zero Then Marshal.Release(d3dCtxPtr)
@@ -621,7 +619,7 @@ Public Class ScreenshotHelpers
                                  GetType(IGraphicsCaptureItemInterop).GUID,
                                  factoryPtr)
         If hr <> 0 OrElse factoryPtr = IntPtr.Zero Then
-            log?.Invoke($"⚠ RoGetActivationFactory failed (hr=0x{hr:X8}).")
+            main.AppendLog($"⚠ RoGetActivationFactory failed (hr=0x{hr:X8}).")
             CleanupD3D(d3dDevicePtr, d3dCtxPtr, dxgiDevicePtr, IntPtr.Zero)
             Return Nothing
         End If
@@ -632,7 +630,7 @@ Public Class ScreenshotHelpers
         Dim itemPtr As IntPtr = IntPtr.Zero
         hr = interop.CreateForWindow(hWnd, IID_IGraphicsCaptureItem, itemPtr)
         If hr <> 0 OrElse itemPtr = IntPtr.Zero Then
-            log?.Invoke($"⚠ CreateForWindow failed (hr=0x{hr:X8}).")
+            main.AppendLog($"⚠ CreateForWindow failed (hr=0x{hr:X8}).")
             CleanupD3D(d3dDevicePtr, d3dCtxPtr, dxgiDevicePtr, IntPtr.Zero)
             Return Nothing
         End If
@@ -642,7 +640,7 @@ Public Class ScreenshotHelpers
         Try
             item = Global.WinRT.MarshalInterface(Of Windows.Graphics.Capture.GraphicsCaptureItem).FromAbi(itemPtr)
         Catch ex As Exception
-            log?.Invoke("⚠ Failed to project ABI to GraphicsCaptureItem: " & ex.Message)
+            main.AppendLog("⚠ Failed to project ABI to GraphicsCaptureItem: " & ex.Message)
             CleanupD3D(d3dDevicePtr, d3dCtxPtr, dxgiDevicePtr, IntPtr.Zero)
             Marshal.Release(itemPtr)
             Return Nothing
@@ -719,9 +717,9 @@ Public Class ScreenshotHelpers
         End Try
 
         If gotBitmap IsNot Nothing Then
-            log?.Invoke("✅ Captured via WGC.")
+            main.AppendLog("✅ Captured via WGC.")
         Else
-            log?.Invoke("ℹ WGC returned no frame in time; will fall back.")
+            main.AppendLog("ℹ WGC returned no frame in time; will fall back.")
         End If
         Return gotBitmap
     End Function
@@ -736,13 +734,13 @@ Public Class ScreenshotHelpers
     Public Shared Async Function SnapAndSend(path As String, folderName As String, folderDir As String, log As Action(Of String)) As Task(Of String)
         Dim hWnd As IntPtr = PickBotWindow(folderName)
         If hWnd = IntPtr.Zero Then
-            log?.Invoke($"⚠ Window for '{folderName}' not found.")
+            main.AppendLog($"⚠ Window for '{folderName}' not found.")
             Return Nothing
         End If
 
         Dim bmp As Bitmap = Await GetBitmapForWindowAsync(hWnd, log)
         If bmp Is Nothing Then
-            log?.Invoke($"⚠ Capture failed for {folderName}.")
+            main.AppendLog($"⚠ Capture failed for {folderName}.")
             Return Nothing
         End If
 
@@ -782,11 +780,11 @@ Public Class ScreenshotHelpers
                     BlurRegion(bmp, sensitiveArea, 15)
                     DrawCenteredWatermark(bmp, sensitiveArea)
                 Else
-                    log?.Invoke("ℹ Skipped blur (stats rect too small).")
+                    main.AppendLog("ℹ Skipped blur (stats rect too small).")
                 End If
             End If
         Catch ex As Exception
-            log?.Invoke($"⚠ Blur/watermark error: {ex.Message}")
+            main.AppendLog($"⚠ Blur/watermark error: {ex.Message}")
         End Try
 
         If Not IO.Directory.Exists(folderDir) Then IO.Directory.CreateDirectory(folderDir)
@@ -795,20 +793,20 @@ Public Class ScreenshotHelpers
         bmp.Save(filePath, Imaging.ImageFormat.Png)
         bmp.Dispose()
 
-        log?.Invoke($"📸 Saved screenshot for {folderName} to {filePath}")
+        main.AppendLog($"📸 Saved screenshot for {folderName} to {filePath}")
         Return filePath
     End Function
 
     Public Shared Async Function CaptureBotSelfie(folderName As String, outDir As String, log As Action(Of String)) As Task(Of String)
         Dim hWnd As IntPtr = PickBotWindow(folderName)
         If hWnd = IntPtr.Zero Then
-            log?.Invoke($"⚠ Window for '{folderName}' not found.")
+            main.AppendLog($"⚠ Window for '{folderName}' not found.")
             Return Nothing
         End If
 
         Dim bmp As Bitmap = Await GetBitmapForWindowAsync(hWnd, log)
         If bmp Is Nothing Then
-            log?.Invoke($"⚠ Capture failed for {folderName}.")
+            main.AppendLog($"⚠ Capture failed for {folderName}.")
             Return Nothing
         End If
 
@@ -848,11 +846,11 @@ Public Class ScreenshotHelpers
                     BlurRegion(bmp, sensitiveArea, 15)
                     DrawCenteredWatermark(bmp, sensitiveArea)
                 Else
-                    log?.Invoke("ℹ Skipped blur (stats rect too small).")
+                    main.AppendLog("ℹ Skipped blur (stats rect too small).")
                 End If
             End If
         Catch ex As Exception
-            log?.Invoke($"⚠ Selfie blur/watermark error: {ex.Message}")
+            main.AppendLog($"⚠ Selfie blur/watermark error: {ex.Message}")
         End Try
 
         If Not IO.Directory.Exists(outDir) Then IO.Directory.CreateDirectory(outDir)
@@ -861,7 +859,7 @@ Public Class ScreenshotHelpers
         bmp.Save(filePath, Imaging.ImageFormat.Png)
         bmp.Dispose()
 
-        log?.Invoke($"📸 Saved selfie for {folderName} to {filePath}")
+        main.AppendLog($"📸 Saved selfie for {folderName} to {filePath}")
         Return filePath
     End Function
 End Class
