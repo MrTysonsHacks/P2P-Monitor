@@ -522,7 +522,7 @@ Public Class ScreenshotHelpers
             If UseCompositorSafe Then
                 Dim bmp As Bitmap = Nothing
                 Try
-                    bmp = TryWgcBitmap(hWnd, log)
+                    bmp = Await TryWgcBitmap(hWnd, log).ConfigureAwait(False)
                 Catch ex As Exception
                     main.AppendLog($"ℹ WGC capture failed, reverting to legacy: {ex.Message}")
                 End Try
@@ -536,7 +536,7 @@ Public Class ScreenshotHelpers
         End Try
     End Function
 
-    Private Shared Function TryWgcBitmap(hWnd As IntPtr, log As Action(Of String)) As Bitmap
+    Private Shared Async Function TryWgcBitmap(hWnd As IntPtr, log As Action(Of String)) As Task(Of Bitmap)
         If hWnd = IntPtr.Zero Then Return Nothing
 
         If IsIconic(hWnd) Then
@@ -671,44 +671,45 @@ Public Class ScreenshotHelpers
         Try
             session.StartCapture()
             Dim deadline = DateTime.UtcNow.AddMilliseconds(1200)
+
             Do
                 Try
                     Using frame = pool.TryGetNextFrame()
                         If frame IsNot Nothing Then
-                            Dim sbTask = Windows.Graphics.Imaging.SoftwareBitmap.CreateCopyFromSurfaceAsync(frame.Surface).AsTask()
-                            If sbTask.Wait(500) Then
-                                Using sb As Windows.Graphics.Imaging.SoftwareBitmap = sbTask.Result
-                                    Using ras As New Windows.Storage.Streams.InMemoryRandomAccessStream()
-                                        Dim encTask = Windows.Graphics.Imaging.BitmapEncoder.CreateAsync(
-                                                      Windows.Graphics.Imaging.BitmapEncoder.PngEncoderId, ras).AsTask()
-                                        encTask.Wait()
-                                        Dim enc = encTask.Result
-                                        enc.SetSoftwareBitmap(sb)
-                                        enc.FlushAsync().AsTask().Wait()
+                            Dim sb = Await Windows.Graphics.Imaging.SoftwareBitmap.CreateCopyFromSurfaceAsync(frame.Surface) _
+                                .AsTask().ConfigureAwait(False)
 
-                                        ras.Seek(0)
-                                        Dim total As ULong = ras.Size
-                                        Using input = ras.GetInputStreamAt(0)
-                                            Using reader As New Windows.Storage.Streams.DataReader(input)
-                                                reader.LoadAsync(CUInt(total)).AsTask().Wait()
-                                                Dim bytes(CInt(total) - 1) As Byte
-                                                reader.ReadBytes(bytes)
-                                                reader.Dispose()
-                                                Using ms As New MemoryStream(bytes)
-                                                    gotBitmap = New Bitmap(ms)
-                                                End Using
-                                            End Using
+                            Using ras As New Windows.Storage.Streams.InMemoryRandomAccessStream()
+                                Dim enc = Await Windows.Graphics.Imaging.BitmapEncoder.CreateAsync(
+                                    Windows.Graphics.Imaging.BitmapEncoder.PngEncoderId, ras) _
+                                    .AsTask().ConfigureAwait(False)
+
+                                enc.SetSoftwareBitmap(sb)
+                                Await enc.FlushAsync().AsTask().ConfigureAwait(False)
+
+                                ras.Seek(0)
+                                Dim sz As ULong = ras.Size
+                                Using input = ras.GetInputStreamAt(0)
+                                    Using reader As New Windows.Storage.Streams.DataReader(input)
+                                        Await reader.LoadAsync(CUInt(sz)).AsTask().ConfigureAwait(False)
+                                        Dim bytes(CInt(sz) - 1) As Byte
+                                        reader.ReadBytes(bytes)
+                                        Using ms As New MemoryStream(bytes)
+                                            gotBitmap = New Bitmap(ms)
                                         End Using
                                     End Using
                                 End Using
-                                Exit Do
-                            End If
+                            End Using
+
+                            Exit Do
                         End If
                     End Using
-                Catch
+                Catch ex As Exception
+                    ErrorHandler.Report(ex, "WGC frame encode")
                 End Try
                 Threading.Thread.Sleep(15)
             Loop While DateTime.UtcNow < deadline
+
 
         Finally
             Try : session.Dispose() : Catch : End Try

@@ -1,4 +1,5 @@
-﻿Imports System.Diagnostics
+﻿Imports System.Collections.Concurrent
+Imports System.Diagnostics
 Imports System.Drawing
 Imports System.Drawing.Imaging
 Imports System.IO
@@ -13,10 +14,9 @@ Imports System.Threading
 Imports System.Threading.Tasks
 Imports MaterialSkin
 Imports MaterialSkin.Controls
+Imports Microsoft.WindowsAPICodePack.Dialogs
 Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
-Imports P2P_Chat_Monitor.My
-Imports Microsoft.WindowsAPICodePack.Dialogs
 
 Public Class main
     Private WithEvents cmbLogDir As MaterialSkin.Controls.MaterialComboBox
@@ -78,6 +78,9 @@ Public Class main
     Private mnuStop As ToolStripMenuItem
     Private mnuExit As ToolStripMenuItem
     Private minimizeToTray As Boolean = True
+    Private _selfieMinutes As Integer
+    Private _selfieBusy As Integer = 0
+    Private ReadOnly _earlyLog As New ConcurrentQueue(Of String)
     Private Class ThreadRoute
         Public Property Account As String
         Public Property ForumWebhook As String
@@ -117,7 +120,7 @@ Public Class main
         _ovl = fx
         Me.Controls.Add(fx)
         fx.BringToFront()
-        AddHandler fx.Disposed, Sub() _ovl = Nothing
+        AddHandler fx.Disposed, Sub(_s As Object, _e As EventArgs) _ovl = Nothing
     End Sub
 
 
@@ -177,14 +180,11 @@ Public Class main
 
             AddHandler _t.Tick, AddressOf OnTick
             AddHandler _ttl.Tick,
-            Sub()
-                _ttl.Stop()
-                Try
-                    _t.Stop()
-                Catch
-                End Try
-                Dispose()
-            End Sub
+    Sub(_s As Object, _e As EventArgs)
+        _ttl.Stop()
+        Try : _t.Stop() : Catch : End Try
+        Dispose()
+    End Sub
 
             _sw.Start()
             _t.Start()
@@ -679,7 +679,11 @@ Public Class main
             End If
         End Using
     End Sub
+
     Private Async Sub OnStartup(sender As Object, e As EventArgs) Handles MyBase.Load
+        AddHandler Application.ThreadException, Sub(_s, ex) ErrorHandler.Report(ex.Exception, "UI Thread")
+        AddHandler AppDomain.CurrentDomain.UnhandledException,
+        Sub(_s, ex) ErrorHandler.Report(TryCast(ex.ExceptionObject, Exception), "Non-UI Thread")
         txtWebhook.Text = My.Settings.WebhookURL
         txtMention.Text = My.Settings.MentionID
         txtLogDir.Text = My.Settings.LogFolderPath
@@ -802,36 +806,74 @@ Public Class main
         AppendLog(If(compositorSafe.Checked, "Compositor Safe Mode: ON (WGC path)", "Compositor Safe Mode: OFF (Legacy/PrintWindow mode)"))
     End Sub
 
+    Private Sub ApplyTheme(enableDark As Boolean)
+        If Me.InvokeRequired Then
+            Me.BeginInvoke(New Action(Sub() ApplyTheme(enableDark)))
+            Return
+        End If
+        If Not Me.IsHandleCreated OrElse Me.IsDisposed Then Return
+
+        If Threading.Interlocked.Exchange(_applyingTheme, 1) = 1 Then Exit Sub
+        Try
+            Dim SkinManager As MaterialSkin.MaterialSkinManager = MaterialSkin.MaterialSkinManager.Instance
+            If enableDark Then
+                SkinManager.Theme = MaterialSkin.MaterialSkinManager.Themes.DARK
+                SkinManager.ColorScheme = New ColorScheme(Primary.Grey800, Primary.Grey900, Primary.Grey500, Accent.LightBlue200, TextShade.WHITE)
+            Else
+                SkinManager.Theme = MaterialSkin.MaterialSkinManager.Themes.LIGHT
+                SkinManager.ColorScheme = New ColorScheme(Primary.BlueGrey800, Primary.BlueGrey900, Primary.BlueGrey500, Accent.LightBlue200, TextShade.WHITE)
+            End If
+        Finally
+            Threading.Interlocked.Exchange(_applyingTheme, 0)
+        End Try
+    End Sub
+
     Private Sub ToggleDarkMode(sender As Object, e As EventArgs) Handles DarkModeEnabled.CheckedChanged
 
         ApplyTheme(DarkModeEnabled.Checked)
         My.Settings.DarkModeOn = DarkModeEnabled.Checked
         My.Settings.Save()
     End Sub
-    Private Sub ApplyTheme(enableDark As Boolean)
+    Private _applyingTheme As Integer = 0
 
-        Dim SkinManager As MaterialSkinManager = MaterialSkinManager.Instance
-        If enableDark Then
-            SkinManager.Theme = MaterialSkinManager.Themes.DARK
-            SkinManager.ColorScheme = New ColorScheme(Primary.Grey800, Primary.Grey900, Primary.Grey500, Accent.LightBlue200, TextShade.WHITE)
-        Else
-            SkinManager.Theme = MaterialSkinManager.Themes.LIGHT
-            SkinManager.ColorScheme = New ColorScheme(Primary.BlueGrey800, Primary.BlueGrey900, Primary.BlueGrey500, Accent.LightBlue200, TextShade.WHITE)
-        End If
-
-    End Sub
     Public Sub AppendLog(msg As String)
-        If txtLog.InvokeRequired Then
-            txtLog.Invoke(New Action(Of String)(AddressOf AppendLog), msg)
-        Else
+        Try
+            If Me.IsDisposed OrElse txtLog Is Nothing OrElse txtLog.IsDisposed Then Exit Sub
+
+            If Me.IsHandleCreated AndAlso Me.InvokeRequired Then
+                Me.BeginInvoke(New Action(Of String)(AddressOf AppendLog), msg)
+                Return
+            End If
+
             With txtLog
                 .SelectionFont = robotoFont
-                .AppendText("[" & DateTime.Now.ToString("HH:mm:ss") & "] " & msg & Environment.NewLine)
+                .AppendText($"[{DateTime.Now:HH:mm:ss}] {msg}{Environment.NewLine}")
+                .SelectionStart = .TextLength
+                .ScrollToCaret()
+            End With
+        Catch
+        End Try
+    End Sub
+
+
+    Protected Overrides Sub OnShown(e As EventArgs)
+        MyBase.OnShown(e)
+        If Me.IsDisposed OrElse txtLog Is Nothing OrElse txtLog.IsDisposed Then Return
+        Dim sb As New System.Text.StringBuilder()
+        Dim m As String
+        While _earlyLog.TryDequeue(m)
+            sb.AppendFormat("[{0:HH:mm:ss}] {1}", DateTime.Now, m).AppendLine()
+        End While
+        If sb.Length > 0 Then
+            With txtLog
+                .SelectionFont = robotoFont
+                .AppendText(sb.ToString())
                 .SelectionStart = .TextLength
                 .ScrollToCaret()
             End With
         End If
     End Sub
+
 
     Private watchers As New List(Of FileSystemWatcher)
 
@@ -862,32 +904,36 @@ Public Class main
         End If
         Return baseWebhook
     End Function
-
     Private Function ResolveWebhookFor(embedTitle As String, baseWebhook As String, account As String) As String
+        'no touchie, this is a sketch ass fix for some compiler errors.
+        Return ResolveWebhookFor(embedTitle, baseWebhook, account, My.Settings.useDTM)
+    End Function
+    Private Function ResolveWebhookFor(embedTitle As String,
+                                   baseWebhook As String,
+                                   account As String,
+                                   useDtm As Boolean) As String
         Dim category As String = DetectCategory(embedTitle)
-        If Not useDTM.Checked Then
+        If Not useDtm Then
             Return ResolveLegacyWebhookForCategory(category, baseWebhook)
         End If
 
         Dim route As ThreadRoute = Nothing
-        If Not String.IsNullOrWhiteSpace(account) AndAlso threadRouteMap.TryGetValue(account, route) AndAlso route IsNot Nothing Then
-            Dim effectiveBase As String = If(Not String.IsNullOrWhiteSpace(route.ForumWebhook), route.ForumWebhook, baseWebhook)
+        If Not String.IsNullOrWhiteSpace(account) AndAlso
+       threadRouteMap.TryGetValue(account, route) AndAlso route IsNot Nothing Then
+
+            Dim effectiveBase As String = If(Not String.IsNullOrWhiteSpace(route.ForumWebhook),
+                                         route.ForumWebhook, baseWebhook)
 
             Select Case category
-                Case "chat"
-                    If route.ShowChats Then Return DiscordHelpers.WithThreadId(effectiveBase, route.ChatsId)
-                Case "quest"
-                    If route.ShowQuests Then Return DiscordHelpers.WithThreadId(effectiveBase, route.QuestsId)
-                Case "error"
-                    If route.ShowErrors Then Return DiscordHelpers.WithThreadId(effectiveBase, route.ErrorsId)
-                Case "task"
-                    If route.ShowTasks Then Return DiscordHelpers.WithThreadId(effectiveBase, route.TasksId)
+                Case "chat" : If route.ShowChats Then Return DiscordHelpers.WithThreadId(effectiveBase, route.ChatsId)
+                Case "quest" : If route.ShowQuests Then Return DiscordHelpers.WithThreadId(effectiveBase, route.QuestsId)
+                Case "error" : If route.ShowErrors Then Return DiscordHelpers.WithThreadId(effectiveBase, route.ErrorsId)
+                Case "task" : If route.ShowTasks Then Return DiscordHelpers.WithThreadId(effectiveBase, route.TasksId)
             End Select
-            Return ResolveLegacyWebhookForCategory(category, baseWebhook)
         End If
+
         Return ResolveLegacyWebhookForCategory(category, baseWebhook)
     End Function
-
 
     Private Sub StartMonitoring(sender As Object, e As EventArgs) Handles btnStart.Click
         If monitoring Then
@@ -994,16 +1040,46 @@ Public Class main
             AddressOf AppendLog, AddressOf SendSegments,
             AddressOf PostFailAlert, AddressOf GetFolderName)
         End Sub
+        Dim onAnyError As ErrorEventHandler = Nothing
+        onAnyError =
+            Sub(_s, errArgs)
+                Try
+                    Dim folder As String = ""
+                    Dim w0 = TryCast(_s, FileSystemWatcher)
+                    If w0 IsNot Nothing Then
+                        Try : folder = IO.Path.GetDirectoryName(w0.Path) : Catch : folder = w0.Path : End Try
+                    End If
 
+                    AppendLog($"⚠ Watcher error in {folder}: {errArgs.GetException()?.Message}")
+                    MessageBox.Show(
+                        $"Watcher error in {folder}:{Environment.NewLine}{errArgs.GetException()}",
+                        "Watcher Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                    Try : w0?.Dispose() : Catch : End Try
+
+                    Dim w As New FileSystemWatcher(folder, "logfile-*.log") With {
+                        .NotifyFilter = NotifyFilters.LastWrite Or NotifyFilters.FileName Or NotifyFilters.Size,
+                        .IncludeSubdirectories = False,
+                        .EnableRaisingEvents = True
+                    }
+                    AddHandler w.Created, onAnyChange
+                    AddHandler w.Changed, onAnyChange
+                    AddHandler w.Error, onAnyError
+
+                    watchers.Add(w)
+                    AppendLog($"🔁 Watcher restarted for {folder}.")
+                Catch rex As Exception
+                    ErrorHandler.Report(rex, "Recreate Watcher")
+                End Try
+            End Sub
         For Each folder In logDirs
-            Dim watcher As New FileSystemWatcher(folder, "logfile-*.log") With {
-        .NotifyFilter = NotifyFilters.LastWrite Or NotifyFilters.FileName Or NotifyFilters.Size,
-        .IncludeSubdirectories = False,
-        .SynchronizingObject = Me,
-        .EnableRaisingEvents = True
-        }
+            Dim watcher As New FileSystemWatcher(folder, "logfile-*.log")
+            watcher.NotifyFilter = NotifyFilters.LastWrite Or NotifyFilters.FileName Or NotifyFilters.Size
+            watcher.IncludeSubdirectories = False
+            watcher.InternalBufferSize = 64 * 1024
+            watcher.EnableRaisingEvents = True
             AddHandler watcher.Changed, onAnyChange
             AddHandler watcher.Created, onAnyChange
+            AddHandler watcher.Error, onAnyError
             watchers.Add(watcher)
         Next
 
@@ -1016,6 +1092,35 @@ Public Class main
         If takeSelfie Then
             StartSelfieTimer()
         End If
+    End Sub
+
+    Private activityWatch As System.Threading.Timer
+
+    Private Sub StartActivityWatchdog()
+        activityWatch = New System.Threading.Timer(
+        Sub(state As Object)
+            Try
+                Dim idle = DateTime.UtcNow - LogHelper.LastActivityUtc
+                If idle > TimeSpan.FromMinutes(15) Then
+                    AppendLog($"⏱ No processed activity in {CInt(idle.TotalMinutes)} minutes. Reinitializing watchers.")
+                    MessageBox.Show(
+                        $"No processed activity in {CInt(idle.TotalMinutes)} minutes. Watchers will be restarted.",
+                        "Activity Watchdog", MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+                    Me.BeginInvoke(Sub()
+                                       Try
+                                           btnStop.PerformClick()
+                                           btnStart.PerformClick()
+                                       Catch ex As Exception
+                                           ErrorHandler.Report(ex, "ActivityWatch Restart")
+                                       End Try
+                                   End Sub)
+                End If
+            Catch ex As Exception
+                ErrorHandler.Report(ex, "ActivityWatch")
+            End Try
+        End Sub,
+        Nothing, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(5))
     End Sub
 
     Private Sub StopMonitoring(sender As Object, e As EventArgs) Handles btnStop.Click
@@ -1208,20 +1313,10 @@ Public Class main
     End Function
 
     Private Function GetSelfieIntervalMinutes() As Integer
-        Dim m As Integer = 0
-        Try
-            If Me.IsHandleCreated AndAlso Not Me.IsDisposed Then
-                Me.Invoke(Sub()
-                              If numSelfieInterval.Value > 0D Then
-                                  m = CInt(numSelfieInterval.Value)
-                              End If
-                          End Sub)
-            End If
-        Catch
-        End Try
-
-        If m <= 0 Then m = My.Settings.BotSelfieInterval
-        If m <= 0 Then m = 1
+        Dim m As Integer = System.Threading.Volatile.Read(_selfieMinutes)
+        If m <= 0 Then
+            m = Math.Max(0, CInt(My.Settings.BotSelfieInterval))
+        End If
         Return m
     End Function
 
@@ -1243,6 +1338,21 @@ Public Class main
     End Sub
 
     Private Async Sub SelfieTick(state As Object)
+        Dim dtmEnabled As Boolean
+        Try
+            If Me.IsHandleCreated AndAlso Not Me.IsDisposed Then
+                Me.Invoke(Sub() dtmEnabled = useDTM.Checked)
+            Else
+                dtmEnabled = My.Settings.useDTM
+            End If
+        Catch
+            dtmEnabled = My.Settings.useDTM
+        End Try
+
+        If Threading.Interlocked.Exchange(_selfieBusy, 1) = 1 Then
+            AppendLog("⏳ SelfieTick skipped (previous still running).")
+            Return
+        End If
         Try
             Dim selfieUrl As String = Nothing
             Dim defaultUrl As String = Nothing
@@ -1310,7 +1420,7 @@ Public Class main
                     Dim effectiveWebhook As String =
                     If(LooksLikeUrl(selfieUrl), selfieUrl, baseWebhook)
 
-                    If useDTM.Checked Then
+                    If dtmEnabled Then
                         Dim route As ThreadRoute = Nothing
                         If threadRouteMap.TryGetValue(accountName, route) AndAlso route IsNot Nothing Then
                             If route.ShowSelfies Then
@@ -1369,6 +1479,8 @@ Public Class main
 
         Catch ex As Exception
             AppendLog($"⚠ SelfieTick fatal error: {ex.Message}")
+        Finally
+            Threading.Interlocked.Exchange(_selfieBusy, 0)
         End Try
     End Sub
 
@@ -1618,12 +1730,6 @@ Public Class main
             $"""description"": ""This is a test embed sent at {Date.Now}.""," &
             $"""color"": 6029136" &
             "}]}"
-            ' Try
-            '   Await DiscordHelpers.PostJson(url, payload)
-            ' AppendLog($"✅ Test embed sent to {name}.")
-            ' Catch ex As Exception
-            'AppendLog($"❌ Failed to send test embed to {name}: {ex.Message}")
-            'End Try
             Dim ok = Await DiscordHelpers.PostJsonOk(url, payload, AddressOf AppendLog)
             If ok Then
                 AppendLog($"✅ Test embed sent to {name}.")
@@ -1644,12 +1750,6 @@ Public Class main
             questEmbed.Text.Trim(), DISCORD_MENTION, "Simulated quest text", screenshotRef,
             filename, GetFolderName(filePath), nowTs, 1)
             Dim err As String = Nothing
-            'If DiscordHelpers.IsJson(payload, err) Then
-            'Await DiscordHelpers.PostJson(questID.Text.Trim(), payload)
-            'AppendLog("✅ Test Quest embed sent.")
-            'Else
-            'AppendLog($"⚠ Invalid JSON in Quest embed: {err}")
-            'End If
             If DiscordHelpers.IsJson(payload, err) Then
                 Dim ok = Await DiscordHelpers.PostJsonOk(questID.Text.Trim(), payload, AddressOf AppendLog)
                 AppendLog(If(ok, "✅ Test Quest embed sent.", "🚫 Test Quest embed failed (see error above)."))
@@ -1663,12 +1763,6 @@ Public Class main
             taskEmbed.Text.Trim(), DISCORD_MENTION, taskLine, activityLine, screenshotRef,
             filename, GetFolderName(filePath), nowTs, 1)
             Dim err As String = Nothing
-            'If DiscordHelpers.IsJson(payload, err) Then
-            'Await DiscordHelpers.PostJson(taskID.Text.Trim(), payload)
-            'AppendLog("✅ Test Task embed sent (Task webhook).")
-            'Else
-            'AppendLog($"⚠ Invalid JSON in Task embed: {err}")
-            'End If
             If DiscordHelpers.IsJson(payload, err) Then
                 Dim ok = Await DiscordHelpers.PostJsonOk(taskID.Text.Trim(), payload, AddressOf AppendLog)
                 AppendLog(If(ok, "✅ Test Task embed sent (Task webhook).", "🚫 Test Task embed failed (see error above)."))
@@ -1695,7 +1789,6 @@ Public Class main
                 Exit Sub
             End If
 
-            ' For selfies we can't use ResolveWebhookFor (no 'selfie' category there), so prepare a tiny helper:
             Dim EffectiveBase As Func(Of ThreadRoute, String) =
                 Function(r As ThreadRoute) As String
                     Dim baseUrlLocal As String = txtWebhook.Text.Trim()

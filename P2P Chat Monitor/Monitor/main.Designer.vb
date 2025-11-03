@@ -1324,7 +1324,7 @@ Partial Class main
         MaximizeBox = False
         Name = "main"
         Sizable = False
-        Text = "P2P Monitor v1.4.3 by CaS5"
+        Text = "P2P Monitor v1.4.4 by CaS5"
         Hamburger.ResumeLayout(False)
         discordManagement.ResumeLayout(False)
         discordManagement.PerformLayout()

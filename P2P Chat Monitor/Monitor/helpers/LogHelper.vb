@@ -16,7 +16,12 @@ Public Class LogHelper
     Public Shared Sub ResetSeen()
         SeenLogs.Clear()
     End Sub
-
+    Private Shared _lastActivityUtc As DateTime = DateTime.UtcNow
+    Public Shared ReadOnly Property LastActivityUtc As DateTime
+        Get
+            Return _lastActivityUtc
+        End Get
+    End Property
     Public Shared Function GetLatestPerFolder(LOG_DIR As String) As List(Of String)
         Dim result As New List(Of String)()
         If String.IsNullOrWhiteSpace(LOG_DIR) Then Return result
@@ -137,7 +142,8 @@ Public Class LogHelper
                     If takeScreenshots Then
                         Dim logRoot As String = System.IO.Path.GetDirectoryName(path)
                         Dim perAccountDir As String = System.IO.Path.Combine(logRoot, folderName)
-                        screenshotPath = Await ScreenshotHelpers.SnapAndSend(path, folderName, perAccountDir, AppendLog)
+                        screenshotPath = Await ScreenshotHelpers.SnapAndSend(path, folderName, perAccountDir, AppendLog) _
+                                                                                                                        .ConfigureAwait(False)
                         If Not String.IsNullOrWhiteSpace(screenshotPath) Then
                             AppendLog("📸 Screenshot captured.")
                         Else
@@ -146,7 +152,7 @@ Public Class LogHelper
                     End If
 
                     AppendLog($"📨 Found {chatSegments.Count} chat event(s)")
-                    Await SendSegments(chatSegments, path, "P2P Chat Event", &H7289DA, screenshotPath)
+                    Await SendSegments(chatSegments, path, "P2P Chat Event", &H7289DA, screenshotPath).ConfigureAwait(False)
                 End If
             End If
 
@@ -157,7 +163,8 @@ Public Class LogHelper
                     If takeScreenshots Then
                         Dim logRoot As String = System.IO.Path.GetDirectoryName(path)
                         Dim perAccountDir As String = System.IO.Path.Combine(logRoot, folderName)
-                        screenshotPath = Await ScreenshotHelpers.SnapAndSend(path, folderName, perAccountDir, AppendLog)
+                        screenshotPath = Await ScreenshotHelpers.SnapAndSend(path, folderName, perAccountDir, AppendLog) _
+                                                                                                                        .ConfigureAwait(False)
                         If Not String.IsNullOrWhiteSpace(screenshotPath) Then
                             AppendLog("📸 Screenshot captured.")
                         Else
@@ -166,7 +173,7 @@ Public Class LogHelper
                     End If
 
                     AppendLog($"🏆 Found {questSegments.Count} quest(s)")
-                    Await SendSegments(questSegments, path, "Quest Event", &HFFD700, screenshotPath)
+                    Await SendSegments(questSegments, path, "Quest Event", &HFFD700, screenshotPath).ConfigureAwait(False)
                 End If
             End If
 
@@ -195,14 +202,15 @@ Public Class LogHelper
                         _recentTasks(key) = now
                         filtered.Add(seg)
                     Next
-
+                    _lastActivityUtc = DateTime.UtcNow
                     If filtered.Count = 0 Then Return True
 
                     Dim screenshotPath As String = ""
                     If takeScreenshots Then
                         Dim logRoot As String = System.IO.Path.GetDirectoryName(path)
                         Dim perAccountDir As String = System.IO.Path.Combine(logRoot, folderName)
-                        screenshotPath = Await ScreenshotHelpers.SnapAndSend(path, folderName, perAccountDir, AppendLog)
+                        screenshotPath = Await ScreenshotHelpers.SnapAndSend(path, folderName, perAccountDir, AppendLog) _
+                                                                                                                        .ConfigureAwait(False)
                         If Not String.IsNullOrWhiteSpace(screenshotPath) Then
                             AppendLog("📸 Screenshot captured.")
                         Else
@@ -211,7 +219,7 @@ Public Class LogHelper
                     End If
 
                     AppendLog($"📝 Found {filtered.Count} task(s)")
-                    Await SendSegments(filtered, path, "Task Event", &H57F287, screenshotPath)
+                    Await SendSegments(filtered, path, "Task Event", &H57F287, screenshotPath).ConfigureAwait(False)
                 End If
             End If
 
@@ -221,7 +229,7 @@ Public Class LogHelper
                     Dim reasonOut = failure.Reason
                     If Not String.IsNullOrWhiteSpace(failure.Extra) Then reasonOut &= $" ({failure.Extra})"
                     AppendLog($"❌ Quest Failure detected: {failure.Trigger} / {reasonOut}")
-                    Await PostFailAlert(failure.Trigger, reasonOut, path, "Quest")
+                    Await PostFailAlert(failure.Trigger, reasonOut, path, "Quest").ConfigureAwait(False)
                 Next
             End If
 
@@ -231,7 +239,7 @@ Public Class LogHelper
                     Dim reasonOut = failure.Reason
                     If Not String.IsNullOrWhiteSpace(failure.Extra) Then reasonOut &= $" ({failure.Extra})"
                     AppendLog($"❌ Skill Failure detected: {failure.Trigger} / {reasonOut}")
-                    Await PostFailAlert(failure.Trigger, reasonOut, path, "Skill")
+                    Await PostFailAlert(failure.Trigger, reasonOut, path, "Skill").ConfigureAwait(False)
                 Next
             End If
 
@@ -241,7 +249,7 @@ Public Class LogHelper
                     Dim reasonOut = failure.Reason
                     If Not String.IsNullOrWhiteSpace(failure.Extra) Then reasonOut &= $" ({failure.Extra})"
                     AppendLog($"❌ Combat Failure detected: {failure.Trigger} / {reasonOut}")
-                    Await PostFailAlert(failure.Trigger, reasonOut, path, "Combat")
+                    Await PostFailAlert(failure.Trigger, reasonOut, path, "Combat").ConfigureAwait(False)
                 Next
             End If
 
@@ -257,6 +265,7 @@ Public Class LogHelper
         Finally
             gate.Release()
         End Try
+        _lastActivityUtc = DateTime.UtcNow
         Return True
     End Function
 
