@@ -1636,7 +1636,7 @@ Public Class main
             If root("DarkModeOn") IsNot Nothing Then DarkModeEnabled.Checked = CBool(root("DarkModeOn"))
             If root("BlurStats") IsNot Nothing Then obscureSS.Checked = CBool(root("BlurStats"))
             If root("useDTM") IsNot Nothing Then useDTM.Checked = CBool(root("useDTM"))
-            If root("AutoUpdate") IsNot Nothing Then monitorAutoUpdate.Checked = CBool(root("AutoUpdate"))
+            If root("monitorAutoUpdate") IsNot Nothing Then monitorAutoUpdate.Checked = CBool(root("monitorAutoUpdate"))
             If root("compositorSafe") IsNot Nothing Then compositorSafe.Checked = CBool(root("compositorSafe"))
             SyncComboFromText()
             ApplyTheme(DarkModeEnabled.Checked)
@@ -2000,5 +2000,25 @@ Public Class main
         menu.StartPosition = FormStartPosition.CenterScreen
         menu.Show()
         menu.Activate()
+    End Sub
+
+    Private Async Sub btnCheckForUpdate_Click(sender As Object, e As EventArgs) Handles btnCheckUpdate.Click
+
+        If Threading.Interlocked.Exchange(updateCheckLock, 1) = 1 Then
+            AppendLog("⏳ Update check already running.")
+            Return
+        End If
+
+        Try
+            Await UpdateHelper.CheckForUpdatesAndPrompt(
+            Me,
+            AddressOf AppendLog,
+            Function() monitorAutoUpdate IsNot Nothing AndAlso monitorAutoUpdate.Checked
+        )
+        Catch ex As Exception
+            AppendLog("⚠ Manual update check failed: " & ex.Message)
+        Finally
+            Threading.Interlocked.Exchange(updateCheckLock, 0)
+        End Try
     End Sub
 End Class

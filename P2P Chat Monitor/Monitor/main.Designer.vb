@@ -87,6 +87,7 @@ Partial Class main
         testBtn = New MaterialSkin.Controls.MaterialButton()
         monitorDiscord = New MaterialSkin.Controls.MaterialButton()
         btnBackToMenu = New MaterialSkin.Controls.MaterialButton()
+        btnCheckUpdate = New MaterialSkin.Controls.MaterialButton()
         Hamburger.SuspendLayout()
         discordManagement.SuspendLayout()
         monitorManagement.SuspendLayout()
@@ -1303,10 +1304,31 @@ Partial Class main
         btnBackToMenu.UseAccentColor = False
         btnBackToMenu.UseVisualStyleBackColor = True
         ' 
+        ' btnCheckUpdate
+        ' 
+        btnCheckUpdate.AutoSize = False
+        btnCheckUpdate.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        btnCheckUpdate.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default
+        btnCheckUpdate.Depth = 0
+        btnCheckUpdate.HighEmphasis = True
+        btnCheckUpdate.Icon = Nothing
+        btnCheckUpdate.Location = New Point(10, 591)
+        btnCheckUpdate.Margin = New Padding(4, 6, 4, 6)
+        btnCheckUpdate.MouseState = MaterialSkin.MouseState.HOVER
+        btnCheckUpdate.Name = "btnCheckUpdate"
+        btnCheckUpdate.NoAccentTextColor = Color.Empty
+        btnCheckUpdate.Size = New Size(168, 36)
+        btnCheckUpdate.TabIndex = 70
+        btnCheckUpdate.Text = "Check For Update"
+        btnCheckUpdate.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained
+        btnCheckUpdate.UseAccentColor = False
+        btnCheckUpdate.UseVisualStyleBackColor = True
+        ' 
         ' main
         ' 
         AutoScaleMode = AutoScaleMode.None
         ClientSize = New Size(1330, 732)
+        Controls.Add(btnCheckUpdate)
         Controls.Add(btnBackToMenu)
         Controls.Add(monitorDiscord)
         Controls.Add(embedEditors)
@@ -1422,4 +1444,5 @@ Partial Class main
     Friend WithEvents btnBackToMenu As MaterialSkin.Controls.MaterialButton
     Friend WithEvents monitorAutoUpdate As MaterialSkin.Controls.MaterialSwitch
     Friend WithEvents selfieEmbed As MaterialSkin.Controls.MaterialMultiLineTextBox
+    Friend WithEvents btnCheckUpdate As MaterialSkin.Controls.MaterialButton
 End Class
