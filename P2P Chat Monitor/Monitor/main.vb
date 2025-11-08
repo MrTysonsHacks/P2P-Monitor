@@ -5,6 +5,7 @@ Imports System.Drawing.Imaging
 Imports System.IO
 Imports System.Net
 Imports System.Net.Http
+Imports System.Net.Http.Headers
 Imports System.Reflection
 Imports System.Runtime.InteropServices
 Imports System.Security.Cryptography
@@ -21,10 +22,6 @@ Imports Newtonsoft.Json.Linq
 Public Class main
     Private WithEvents cmbLogDir As MaterialSkin.Controls.MaterialComboBox
     Private isSyncingUI As Boolean = False
-    Private cmsLogDir As ContextMenuStrip
-    Private mnuRemoveSelected As ToolStripMenuItem
-    Private mnuSort As ToolStripMenuItem
-    Private mnuClearAll As ToolStripMenuItem
     Private Shared ReadOnly http As New Net.Http.HttpClient()
     Private robotoFont As Font = New Font("Roboto", 12.0F, FontStyle.Bold)
     Private monitoring As Boolean = False
@@ -51,7 +48,6 @@ Public Class main
     Private updateTimer As System.Threading.Timer
     Private updateCheckLock As Integer = 0
     Private lastFile As String = Nothing
-    Private newLinesSinceLastTick As Boolean = False
     Friend Shared questFailureTriggers As New List(Of Regex)
     Friend Shared questFailureReasons As New List(Of KeyValuePair(Of Regex, String))
     Friend Shared skillFailureTriggers As New List(Of Regex)
@@ -61,16 +57,10 @@ Public Class main
     Friend Shared botFailureTriggers As New List(Of Regex)
     Friend Shared botFailureReasons As New List(Of KeyValuePair(Of Regex, String))
     Private selfieTimer As System.Threading.Timer
-    Private ReadOnly selfieLock As New Object()
     Public Shared accountBreakStates As New Dictionary(Of String, Boolean)(StringComparer.OrdinalIgnoreCase)
-    Private metricsTimer As System.Threading.Timer
     Private ReadOnly _q() As Keys = {Keys.Up, Keys.Down, Keys.Left, Keys.Right, Keys.Left, Keys.Right, Keys.B, Keys.A}
     Private _qix As Integer = 0
     Private _ovl As Control = Nothing
-    Private _gif As Image
-    Private _gifRect As Rectangle
-    Private METRICS_WEBHOOK_URL As String = "https://discord.com/api/webhooks/1428006646080208937/JfLDDOsm7n_BTkYIbjbXS0mR4sWaktOfBL9cRDAgnxeMp5r422oPZkYuRNz28koGB4l4"
-    Private CLIENT_ID As String = Environment.UserName & "@" & Environment.MachineName
     Private tray As NotifyIcon
     Private trayMenu As ContextMenuStrip
     Private mnuShow As ToolStripMenuItem
@@ -78,6 +68,12 @@ Public Class main
     Private mnuStop As ToolStripMenuItem
     Private mnuExit As ToolStripMenuItem
     Private minimizeToTray As Boolean = True
+    Private rememberCloseChoice As Boolean = False
+    Private Enum CloseActionChoice
+        None = 0
+        MinimizeToTray = 1
+        ExitMonitor = 2
+    End Enum
     Private _selfieMinutes As Integer
     Private _selfieBusy As Integer = 0
     Private ReadOnly _earlyLog As New ConcurrentQueue(Of String)
@@ -98,6 +94,14 @@ Public Class main
 
     Private threadRouteCache As New List(Of ThreadRoute)()
     Private threadRouteMap As New Dictionary(Of String, ThreadRoute)(StringComparer.OrdinalIgnoreCase)
+
+    Private Shared Function AppVersion() As String
+        Try
+            Return Application.ProductVersion
+        Catch
+            Return Assembly.GetExecutingAssembly().GetName().Version.ToString()
+        End Try
+    End Function
 
     Private Sub _kp(ByVal s As Object, ByVal e As KeyEventArgs)
         Dim k = e.KeyCode
@@ -283,7 +287,6 @@ Public Class main
     End Sub
 
     Private Sub Main_Resize(sender As Object, e As EventArgs)
-        If Not minimizeToTray Then Exit Sub
         If Me.WindowState = FormWindowState.Minimized Then
             HideToTray()
         End If
@@ -306,35 +309,31 @@ Public Class main
     End Sub
 
     Private Sub RestoreFromTray(Optional sender As Object = Nothing, Optional e As EventArgs = Nothing)
+        If Me.InvokeRequired Then
+            Me.BeginInvoke(New Action(Sub() RestoreFromTray(sender, e)))
+            Return
+        End If
+        If Me.IsDisposed Then Return
+        ShowInTaskbar = True
+        tray.Visible = False
         Me.Show()
         Me.WindowState = FormWindowState.Normal
-        ShowInTaskbar = True
+        Me.TopMost = True
+        Me.TopMost = False
+        Me.BringToFront()
         Me.Activate()
-        tray.Visible = False
-    End Sub
-
-    Private Sub StartMetrics()
-        metricsTimer = New System.Threading.Timer(AddressOf MetricsTick, Nothing, 60_000, 60_000)
-    End Sub
-
-    Private Async Sub MetricsTick(state As Object)
+        Me.Focus()
         Try
-            Dim payload = "{""content"":""HB " & CLIENT_ID & " " & DateTimeOffset.UtcNow.ToUnixTimeSeconds() & """}"
-            Dim ok = Await DiscordHelpers.PostJsonOk(METRICS_WEBHOOK_URL, payload)
-            If Not ok Then
-                AppendLog("⚠ Metrics heartbeat failed (post).")
+            If Hamburger IsNot Nothing AndAlso Not Hamburger.IsDisposed Then
+                Dim wasEnabled = Hamburger.Enabled
+                Hamburger.Enabled = False
+                Hamburger.Enabled = wasEnabled
+                Hamburger.Refresh()
             End If
-        Catch ex As Exception
-            AppendLog("⚠ Metrics heartbeat failed: " & ex.Message)
+        Catch
         End Try
     End Sub
 
-    Private Sub StopMetrics()
-        If metricsTimer IsNot Nothing Then
-            metricsTimer.Dispose()
-            metricsTimer = Nothing
-        End If
-    End Sub
 
     Private Shared Function ParseFolders(raw As String) As List(Of String)
         Dim list As New List(Of String)()
@@ -378,62 +377,6 @@ Public Class main
         End Try
     End Sub
 
-    Private Function CreateThemedContextMenu() As ContextMenuStrip
-        Dim menu As ContextMenuStrip = Nothing
-
-        Try
-            Dim candidateNames As String() = {
-                "MaterialSkin.Controls.MaterialContextMenuStrip, MaterialSkin",
-                "MaterialSkin.Controls.MaterialContextMenuStrip, MaterialSkin.2"
-            }
-
-            For Each qn In candidateNames
-                Dim themedType As Type = Type.GetType(qn, throwOnError:=False)
-                If themedType Is Nothing Then Continue For
-
-                Dim ctor0 = themedType.GetConstructor(Type.EmptyTypes)
-                If ctor0 IsNot Nothing Then
-                    menu = CType(ctor0.Invoke(Nothing), ContextMenuStrip)
-                    Exit For
-                End If
-
-                Dim ctor1 = themedType.GetConstructor(New Type() {GetType(System.ComponentModel.IContainer)})
-                If ctor1 IsNot Nothing Then
-                    Dim container As System.ComponentModel.IContainer = If(Me.components, New System.ComponentModel.Container())
-                    menu = CType(ctor1.Invoke(New Object() {container}), ContextMenuStrip)
-                    Exit For
-                End If
-            Next
-        Catch
-            menu = Nothing
-        End Try
-
-        If menu Is Nothing Then
-            menu = New ContextMenuStrip()
-        End If
-
-        AddHandler menu.Opening, AddressOf CmsLogDir_Opening
-        menu.ShowImageMargin = False
-        menu.RenderMode = ToolStripRenderMode.ManagerRenderMode
-        menu.Items.Clear()
-
-        mnuRemoveSelected = New ToolStripMenuItem("Remove selected")
-        AddHandler mnuRemoveSelected.Click, AddressOf MnuRemoveSelected_Click
-        menu.Items.Add(mnuRemoveSelected)
-
-        mnuSort = New ToolStripMenuItem("Sort A→Z")
-        AddHandler mnuSort.Click, AddressOf MnuSort_Click
-        menu.Items.Add(mnuSort)
-
-        menu.Items.Add(New ToolStripSeparator())
-
-        mnuClearAll = New ToolStripMenuItem("Clear all")
-        AddHandler mnuClearAll.Click, AddressOf MnuClearAll_Click
-        menu.Items.Add(mnuClearAll)
-
-        Return menu
-    End Function
-
     Private Sub EnsureFolderInText(ByVal folder As String)
         Dim parts = txtLogDir.Text.Split(";"c).
         Select(Function(p) p.Trim()).
@@ -467,83 +410,6 @@ Public Class main
             txtLogDir.Text = newRaw
         End If
         SyncComboFromText()
-    End Sub
-
-    Private Sub CmbLogDir_SelectionChangeCommittedHandler(ByVal s As Object, ByVal ev As EventArgs)
-        Dim sel = TryCast(cmbLogDir.SelectedItem, String)
-        If String.IsNullOrWhiteSpace(sel) Then Return
-        EnsureFolderInText(sel)
-        SyncComboFromText()
-    End Sub
-    Private Sub MnuRemoveSelected_Click(ByVal s As Object, ByVal ev As EventArgs)
-        Dim sel = TryCast(cmbLogDir.SelectedItem, String)
-        If String.IsNullOrWhiteSpace(sel) Then Return
-        Dim parts = GetAllParts().Where(Function(p) Not p.Equals(sel, StringComparison.OrdinalIgnoreCase)).ToList()
-        SetAllParts(parts)
-    End Sub
-
-    Private Sub MnuRemoveMissing_Click(ByVal s As Object, ByVal ev As EventArgs)
-        Dim parts = GetAllParts().Where(Function(p) IO.Directory.Exists(p)).ToList()
-        SetAllParts(parts)
-    End Sub
-
-    Private Sub MnuSort_Click(ByVal s As Object, ByVal ev As EventArgs)
-        Dim parts = GetAllParts().OrderBy(Function(p) p, StringComparer.OrdinalIgnoreCase).ToList()
-        SetAllParts(parts)
-    End Sub
-
-    Private Sub MnuClearAll_Click(ByVal s As Object, ByVal ev As EventArgs)
-        SetAllParts(Array.Empty(Of String))
-    End Sub
-
-    Private Sub CmsLogDir_Opening(ByVal s As Object, ByVal ev As System.ComponentModel.CancelEventArgs)
-        If cmbLogDir Is Nothing OrElse cmsLogDir Is Nothing Then
-            ev.Cancel = False
-            Exit Sub
-        End If
-
-        Dim parts As List(Of String)
-        Try
-            parts = GetAllParts()
-        Catch
-            parts = New List(Of String)()
-        End Try
-
-        Dim hasAny As Boolean = (parts.Count > 0)
-        Dim selText As String = TryCast(cmbLogDir.SelectedItem, String)
-        Dim hasSel As Boolean = Not String.IsNullOrWhiteSpace(selText)
-
-        mnuRemoveSelected.Enabled = hasSel
-        mnuSort.Enabled = hasAny
-        mnuClearAll.Enabled = hasAny
-
-        Dim isMaterialMenu As Boolean = (cmsLogDir.GetType().FullName = "MaterialSkin.Controls.MaterialContextMenuStrip")
-        If Not isMaterialMenu Then
-            Try
-                Dim mgr = MaterialSkin.MaterialSkinManager.Instance
-                Dim isDark = (mgr IsNot Nothing AndAlso mgr.Theme = MaterialSkin.MaterialSkinManager.Themes.DARK)
-
-                cmsLogDir.BackColor = If(isDark, Color.FromArgb(48, 48, 48), Color.White)
-                cmsLogDir.ForeColor = If(isDark, Color.White, Color.Black)
-
-                For Each it As ToolStripItem In cmsLogDir.Items
-                    If TypeOf it Is ToolStripMenuItem Then
-                        it.ForeColor = cmsLogDir.ForeColor
-                    End If
-                Next
-            Catch
-            End Try
-        End If
-    End Sub
-
-    Private Sub CmbLogDir_KeyDownHandler(ByVal s As Object, ByVal e As KeyEventArgs)
-        If e.Control AndAlso e.KeyCode = Keys.Delete Then
-            Dim sel = TryCast(cmbLogDir.SelectedItem, String)
-            If Not String.IsNullOrWhiteSpace(sel) Then
-                e.SuppressKeyPress = True
-                MnuRemoveSelected_Click(Nothing, EventArgs.Empty)
-            End If
-        End If
     End Sub
 
     Private Sub StartUpdateTimer()
@@ -715,7 +581,6 @@ Public Class main
         ScreenshotHelpers.UseCompositorSafe = compositorSafe.Checked
         Me.KeyPreview = True
         AddHandler Me.KeyDown, AddressOf _kp
-
         numSelfieInterval.Value = If(My.Settings.BotSelfieInterval > 0, My.Settings.BotSelfieInterval, 60)
         numIntervalSecond.Value = If(My.Settings.CheckInterval > 0, My.Settings.CheckInterval, 5)
         DarkModeEnabled.Checked = My.Settings.DarkModeOn
@@ -737,13 +602,7 @@ Public Class main
         cmbLogDir.Anchor = txtLogDir.Anchor
         cmbLogDir.TabIndex = txtLogDir.TabIndex
         txtLogDir.Parent.Controls.Add(cmbLogDir)
-
-        cmsLogDir = CreateThemedContextMenu()
-        cmbLogDir.ContextMenuStrip = cmsLogDir
-        AddHandler cmbLogDir.KeyDown, AddressOf CmbLogDir_KeyDownHandler
         AddHandler txtLogDir.TextChanged, AddressOf TxtLogDir_TextChangedHandler
-        AddHandler cmbLogDir.SelectionChangeCommitted, AddressOf CmbLogDir_SelectionChangeCommittedHandler
-        accountNames.ContextMenuStrip = CLICreator.CreateAccountContextMenu(accountNames)
 
         SyncComboFromText()
 
@@ -780,20 +639,49 @@ Public Class main
             My.Settings.Save()
         End If
         selfieEmbed.Text = My.Settings.SelfieEmbedSet
-        StartMetrics()
+        MetricsHelper.StartMetrics() 'Just comment out this line now if you don't wish to send updates for the live users
         Await FetchFailRules()
         Await UpdateHelper.CheckForUpdatesAndPrompt(Me, AddressOf AppendLog,
                                                     Function() monitorAutoUpdate IsNot Nothing AndAlso monitorAutoUpdate.Checked)
         StartUpdateTimer()
     End Sub
+
     Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
-        If minimizeToTray AndAlso e.CloseReason = CloseReason.UserClosing Then
-            e.Cancel = True
-            HideToTray()
-            AppendLog("Minimized to tray (right-click tray icon for options).")
-            Return
+        If e.CloseReason = CloseReason.UserClosing Then
+            If rememberCloseChoice Then
+                If minimizeToTray Then
+                    e.Cancel = True
+                    HideToTray()
+                    AppendLog("Minimized to tray (right-click tray icon for options).")
+                    Return
+                Else
+                End If
+            Else
+                Using dlg As New CloseChoiceDialog()
+                    Dim result = dlg.ShowDialog(Me)
+                    If result <> DialogResult.OK OrElse dlg.SelectedAction = CloseActionChoice.None Then
+                        e.Cancel = True
+                        Return
+                    End If
+
+                    If dlg.RememberChoice Then
+                        rememberCloseChoice = True
+                        minimizeToTray = (dlg.SelectedAction = CloseActionChoice.MinimizeToTray)
+                        SaveCfg()
+                    Else
+                        minimizeToTray = (dlg.SelectedAction = CloseActionChoice.MinimizeToTray)
+                    End If
+
+                    If dlg.SelectedAction = CloseActionChoice.MinimizeToTray Then
+                        e.Cancel = True
+                        HideToTray()
+                        AppendLog("Minimized to tray (right-click tray icon for options).")
+                        Return
+                    End If
+                End Using
+            End If
         End If
-        StopMetrics()
+        MetricsHelper.StopMetrics()
         StopSelfieTimer()
         StopUpdateTimer()
         MyBase.OnFormClosing(e)
@@ -855,12 +743,11 @@ Public Class main
         End Try
     End Sub
 
-
     Protected Overrides Sub OnShown(e As EventArgs)
         MyBase.OnShown(e)
         If Me.IsDisposed OrElse txtLog Is Nothing OrElse txtLog.IsDisposed Then Return
         Dim sb As New System.Text.StringBuilder()
-        Dim m As String
+        Dim m As String = Nothing
         While _earlyLog.TryDequeue(m)
             sb.AppendFormat("[{0:HH:mm:ss}] {1}", DateTime.Now, m).AppendLine()
         End While
@@ -873,7 +760,6 @@ Public Class main
             End With
         End If
     End Sub
-
 
     Private watchers As New List(Of FileSystemWatcher)
 
@@ -1517,6 +1403,9 @@ Public Class main
         Public monitorAutoUpdate As Boolean
         Public compositorSafe As Boolean
         Public useDTM As Boolean
+        Public RememberCloseChoice As Boolean
+        Public CloseToTray As Boolean
+        Public ClientId As String
         Public ChatEmbedSet As String
         Public ErrorEmbedSet As String
         Public QuestEmbedSet As String
@@ -1559,6 +1448,9 @@ Public Class main
             .monitorAutoUpdate = monitorAutoUpdate.Checked,
             .compositorSafe = compositorSafe.Checked,
             .useDTM = useDTM.Checked,
+            .RememberCloseChoice = rememberCloseChoice,
+            .CloseToTray = minimizeToTray,
+            .ClientId = MetricsHelper.CLIENT_ID,
             .ChatEmbedSet = chatEmbed.Text,
             .ErrorEmbedSet = errorEmbed.Text,
             .QuestEmbedSet = questEmbed.Text,
@@ -1578,6 +1470,8 @@ Public Class main
         Try
             Dim path = GetCfgPath()
             If Not IO.File.Exists(path) Then
+                MetricsHelper.CLIENT_ID = MetricsHelper.GenerateUuid()
+                SaveCfg()
                 AppendLog("Settings.cfg not found (using defaults/My.Settings).")
                 Exit Sub
             End If
@@ -1596,6 +1490,13 @@ Public Class main
                 Exit Sub
             End If
             Dim root As JObject = JObject.Parse(json)
+
+            If root("ClientId") IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(CStr(root("ClientId"))) Then
+                MetricsHelper.CLIENT_ID = CStr(root("ClientId"))
+            Else
+                MetricsHelper.CLIENT_ID = MetricsHelper.GenerateUuid()
+                SaveCfg()
+            End If
 
             If root("WebhookURL") IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(CStr(root("WebhookURL"))) Then
                 txtWebhook.Text = CStr(root("WebhookURL"))
@@ -1636,6 +1537,8 @@ Public Class main
             If root("DarkModeOn") IsNot Nothing Then DarkModeEnabled.Checked = CBool(root("DarkModeOn"))
             If root("BlurStats") IsNot Nothing Then obscureSS.Checked = CBool(root("BlurStats"))
             If root("useDTM") IsNot Nothing Then useDTM.Checked = CBool(root("useDTM"))
+            If root("RememberCloseChoice") IsNot Nothing Then rememberCloseChoice = CBool(root("RememberCloseChoice"))
+            If root("CloseToTray") IsNot Nothing Then minimizeToTray = CBool(root("CloseToTray"))
             If root("monitorAutoUpdate") IsNot Nothing Then monitorAutoUpdate.Checked = CBool(root("monitorAutoUpdate"))
             If root("compositorSafe") IsNot Nothing Then compositorSafe.Checked = CBool(root("compositorSafe"))
             SyncComboFromText()
@@ -1937,7 +1840,7 @@ Public Class main
         End Try
     End Sub
     Private Sub btnAddAcc_Click(sender As Object, e As EventArgs) Handles btnAddAcc.Click
-        Dim newName As String = CLICreator.PromptForAccountName(Me)
+        Dim newName As String = P2P_Chat_Monitor.PromptForAccountName(Me)
         If Not String.IsNullOrWhiteSpace(newName) Then
             If Not accountNames.Items.Contains(newName) Then
                 accountNames.Items.Add(newName)
@@ -1960,7 +1863,7 @@ Public Class main
         End Using
     End Sub
     Private Sub createCLI_Click(sender As Object, e As EventArgs) Handles createCLI.Click
-        CLICreator.GenerateBatchFile(
+        P2P_Chat_Monitor.GenerateBatchFile(
             dbPath.Text,
             ramNum.Value,
             covertMode.Checked,
@@ -2020,5 +1923,73 @@ Public Class main
         Finally
             Threading.Interlocked.Exchange(updateCheckLock, 0)
         End Try
+    End Sub
+
+    Private Class CloseChoiceDialog
+        Inherits MaterialForm
+
+        Public Property SelectedAction As CloseActionChoice = CloseActionChoice.None
+        Public Property RememberChoice As Boolean = False
+
+        Private ReadOnly btnTray As MaterialButton
+        Private ReadOnly btnExit As MaterialButton
+        Private ReadOnly chkRemember As MaterialCheckbox
+
+        Public Sub New()
+            Me.Text = "Close P2P Monitor"
+            Me.StartPosition = FormStartPosition.CenterParent
+            Me.MaximizeBox = False
+            Me.MinimizeBox = False
+            Me.Sizable = False
+            Me.Size = New Size(420, 220)
+
+            Dim skin = MaterialSkinManager.Instance
+            skin.AddFormToManage(Me)
+
+            chkRemember = New MaterialCheckbox() With {
+                .Text = "Remember my choice",
+                .Location = New Point(40, 80),
+                .AutoSize = True
+            }
+
+            btnTray = New MaterialButton() With {
+                .Text = "Minimize to tray",
+                .Location = New Point(40, 130),
+                .AutoSizeMode = AutoSizeMode.GrowAndShrink
+            }
+
+            btnExit = New MaterialButton() With {
+                .Text = "Exit Monitor",
+                .Location = New Point(220, 130),
+                .AutoSizeMode = AutoSizeMode.GrowAndShrink
+            }
+
+            AddHandler btnTray.Click,
+                Sub()
+                    SelectedAction = CloseActionChoice.MinimizeToTray
+                    RememberChoice = chkRemember.Checked
+                    Me.DialogResult = DialogResult.OK
+                    Me.Close()
+                End Sub
+
+            AddHandler btnExit.Click,
+                Sub()
+                    SelectedAction = CloseActionChoice.ExitMonitor
+                    RememberChoice = chkRemember.Checked
+                    Me.DialogResult = DialogResult.OK
+                    Me.Close()
+                End Sub
+
+            Me.Controls.Add(chkRemember)
+            Me.Controls.Add(btnTray)
+            Me.Controls.Add(btnExit)
+        End Sub
+    End Class
+
+    Private Sub deleteLog_Click(sender As Object, e As EventArgs) Handles deleteLog.Click
+        Dim sel = TryCast(cmbLogDir.SelectedItem, String)
+        If String.IsNullOrWhiteSpace(sel) Then Return
+        Dim parts = GetAllParts().Where(Function(p) Not p.Equals(sel, StringComparison.OrdinalIgnoreCase)).ToList()
+        SetAllParts(parts)
     End Sub
 End Class

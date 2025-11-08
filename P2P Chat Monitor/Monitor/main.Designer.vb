@@ -13,6 +13,14 @@ Partial Class main
         End Try
     End Sub
 
+    Protected Overrides ReadOnly Property CreateParams As CreateParams
+        Get
+            Dim cp = MyBase.CreateParams
+            cp.ExStyle = cp.ExStyle Or &H2000000 ' WS_EX_COMPOSITED
+            Return cp
+        End Get
+    End Property
+
     Private components As System.ComponentModel.IContainer
 
     <System.Diagnostics.DebuggerStepThrough()>
@@ -50,27 +58,18 @@ Partial Class main
         chatEmbed = New MaterialSkin.Controls.MaterialMultiLineTextBox()
         questEmbed = New MaterialSkin.Controls.MaterialMultiLineTextBox()
         monitorManagement = New TabPage()
-        monitorAutoUpdate = New MaterialSkin.Controls.MaterialSwitch()
-        compositorSafe = New MaterialSkin.Controls.MaterialSwitch()
-        MaterialLabel26 = New MaterialSkin.Controls.MaterialLabel()
-        MaterialLabel25 = New MaterialSkin.Controls.MaterialLabel()
-        obscureSS = New MaterialSkin.Controls.MaterialSwitch()
+        deleteLog = New MaterialSkin.Controls.MaterialButton()
         selfieMode = New MaterialSkin.Controls.MaterialSwitch()
-        numSelfieInterval = New MaterialSkin.Controls.MaterialSlider()
-        monitorTask = New MaterialSkin.Controls.MaterialSwitch()
-        btnCleanLog = New MaterialSkin.Controls.MaterialButton()
+        MaterialLabel26 = New MaterialSkin.Controls.MaterialLabel()
         txtLogDir = New MaterialSkin.Controls.MaterialTextBox()
-        helpLinks = New TabPage()
-        MaterialMultiLineTextBox1 = New MaterialSkin.Controls.MaterialMultiLineTextBox()
-        p2pgearBtn = New MaterialSkin.Controls.MaterialButton()
-        p2psurvivalBtn = New MaterialSkin.Controls.MaterialButton()
-        p2psetupBtn = New MaterialSkin.Controls.MaterialButton()
-        p2psalesBtn = New MaterialSkin.Controls.MaterialButton()
-        dbforumBtn = New MaterialSkin.Controls.MaterialButton()
-        dbdiscordBtn = New MaterialSkin.Controls.MaterialButton()
-        p2pdiscordBtn = New MaterialSkin.Controls.MaterialButton()
-        wikiBtn = New MaterialSkin.Controls.MaterialButton()
-        TabPage1 = New TabPage()
+        btnCleanLog = New MaterialSkin.Controls.MaterialButton()
+        compositorSafe = New MaterialSkin.Controls.MaterialSwitch()
+        monitorTask = New MaterialSkin.Controls.MaterialSwitch()
+        MaterialLabel25 = New MaterialSkin.Controls.MaterialLabel()
+        monitorAutoUpdate = New MaterialSkin.Controls.MaterialSwitch()
+        obscureSS = New MaterialSkin.Controls.MaterialSwitch()
+        numSelfieInterval = New MaterialSkin.Controls.MaterialSlider()
+        CLICreator = New TabPage()
         launchP2P = New MaterialSkin.Controls.MaterialCheckbox()
         createCLI = New MaterialSkin.Controls.MaterialButton()
         cliOutput = New MaterialSkin.Controls.MaterialMultiLineTextBox()
@@ -82,6 +81,16 @@ Partial Class main
         dbPath = New MaterialSkin.Controls.MaterialTextBox()
         btnAddAcc = New MaterialSkin.Controls.MaterialButton()
         accountNames = New MaterialSkin.Controls.MaterialComboBox()
+        helpLinks = New TabPage()
+        MaterialMultiLineTextBox1 = New MaterialSkin.Controls.MaterialMultiLineTextBox()
+        p2pgearBtn = New MaterialSkin.Controls.MaterialButton()
+        p2psurvivalBtn = New MaterialSkin.Controls.MaterialButton()
+        p2psetupBtn = New MaterialSkin.Controls.MaterialButton()
+        p2psalesBtn = New MaterialSkin.Controls.MaterialButton()
+        dbforumBtn = New MaterialSkin.Controls.MaterialButton()
+        dbdiscordBtn = New MaterialSkin.Controls.MaterialButton()
+        p2pdiscordBtn = New MaterialSkin.Controls.MaterialButton()
+        wikiBtn = New MaterialSkin.Controls.MaterialButton()
         ImageList1 = New ImageList(components)
         embedEditors = New MaterialSkin.Controls.MaterialButton()
         testBtn = New MaterialSkin.Controls.MaterialButton()
@@ -91,8 +100,8 @@ Partial Class main
         Hamburger.SuspendLayout()
         discordManagement.SuspendLayout()
         monitorManagement.SuspendLayout()
+        CLICreator.SuspendLayout()
         helpLinks.SuspendLayout()
-        TabPage1.SuspendLayout()
         SuspendLayout()
         ' 
         ' btnBrowseLogDir
@@ -102,7 +111,7 @@ Partial Class main
         btnBrowseLogDir.Depth = 0
         btnBrowseLogDir.HighEmphasis = True
         btnBrowseLogDir.Icon = Nothing
-        btnBrowseLogDir.Location = New Point(1223, 158)
+        btnBrowseLogDir.Location = New Point(1222, 160)
         btnBrowseLogDir.Margin = New Padding(4, 6, 4, 6)
         btnBrowseLogDir.MouseState = MaterialSkin.MouseState.HOVER
         btnBrowseLogDir.Name = "btnBrowseLogDir"
@@ -159,7 +168,7 @@ Partial Class main
         chkMonitorChat.AutoSize = True
         chkMonitorChat.BackColor = SystemColors.Control
         chkMonitorChat.Depth = 0
-        chkMonitorChat.Location = New Point(5, 12)
+        chkMonitorChat.Location = New Point(5, 3)
         chkMonitorChat.Margin = New Padding(0)
         chkMonitorChat.MouseLocation = New Point(-1, -1)
         chkMonitorChat.MouseState = MaterialSkin.MouseState.HOVER
@@ -174,7 +183,7 @@ Partial Class main
         ' 
         monitorQuest.AutoSize = True
         monitorQuest.Depth = 0
-        monitorQuest.Location = New Point(5, 49)
+        monitorQuest.Location = New Point(5, 40)
         monitorQuest.Margin = New Padding(0)
         monitorQuest.MouseLocation = New Point(-1, -1)
         monitorQuest.MouseState = MaterialSkin.MouseState.HOVER
@@ -189,7 +198,7 @@ Partial Class main
         ' 
         captureWin.AutoSize = True
         captureWin.Depth = 0
-        captureWin.Location = New Point(5, 86)
+        captureWin.Location = New Point(5, 77)
         captureWin.Margin = New Padding(0)
         captureWin.MouseLocation = New Point(-1, -1)
         captureWin.MouseState = MaterialSkin.MouseState.HOVER
@@ -204,7 +213,7 @@ Partial Class main
         ' 
         autoClean.AutoSize = True
         autoClean.Depth = 0
-        autoClean.Location = New Point(5, 123)
+        autoClean.Location = New Point(5, 114)
         autoClean.Margin = New Padding(0)
         autoClean.MouseLocation = New Point(-1, -1)
         autoClean.MouseState = MaterialSkin.MouseState.HOVER
@@ -221,7 +230,7 @@ Partial Class main
         DarkModeEnabled.Checked = True
         DarkModeEnabled.CheckState = CheckState.Checked
         DarkModeEnabled.Depth = 0
-        DarkModeEnabled.Location = New Point(5, 160)
+        DarkModeEnabled.Location = New Point(5, 151)
         DarkModeEnabled.Margin = New Padding(0)
         DarkModeEnabled.MouseLocation = New Point(-1, -1)
         DarkModeEnabled.MouseState = MaterialSkin.MouseState.HOVER
@@ -236,7 +245,7 @@ Partial Class main
         ' 
         numIntervalSecond.Depth = 0
         numIntervalSecond.ForeColor = Color.FromArgb(CByte(222), CByte(0), CByte(0), CByte(0))
-        numIntervalSecond.Location = New Point(915, 23)
+        numIntervalSecond.Location = New Point(914, 19)
         numIntervalSecond.MouseState = MaterialSkin.MouseState.HOVER
         numIntervalSecond.Name = "numIntervalSecond"
         numIntervalSecond.RangeMax = 60
@@ -254,7 +263,7 @@ Partial Class main
         MaterialLabel1.Depth = 0
         MaterialLabel1.Font = New Font("Roboto", 10.0F, FontStyle.Regular, GraphicsUnit.Pixel)
         MaterialLabel1.FontType = MaterialSkin.MaterialSkinManager.fontType.Overline
-        MaterialLabel1.Location = New Point(880, 7)
+        MaterialLabel1.Location = New Point(880, 3)
         MaterialLabel1.MouseState = MaterialSkin.MouseState.HOVER
         MaterialLabel1.Name = "MaterialLabel1"
         MaterialLabel1.Size = New Size(434, 13)
@@ -356,7 +365,7 @@ Partial Class main
         ' 
         combatError.AutoSize = True
         combatError.Depth = 0
-        combatError.Location = New Point(313, 49)
+        combatError.Location = New Point(335, 40)
         combatError.Margin = New Padding(0)
         combatError.MouseLocation = New Point(-1, -1)
         combatError.MouseState = MaterialSkin.MouseState.HOVER
@@ -371,7 +380,7 @@ Partial Class main
         ' 
         questError.AutoSize = True
         questError.Depth = 0
-        questError.Location = New Point(313, 86)
+        questError.Location = New Point(335, 77)
         questError.Margin = New Padding(0)
         questError.MouseLocation = New Point(-1, -1)
         questError.MouseState = MaterialSkin.MouseState.HOVER
@@ -386,7 +395,7 @@ Partial Class main
         ' 
         skillIssue.AutoSize = True
         skillIssue.Depth = 0
-        skillIssue.Location = New Point(313, 123)
+        skillIssue.Location = New Point(335, 114)
         skillIssue.Margin = New Padding(0)
         skillIssue.MouseLocation = New Point(-1, -1)
         skillIssue.MouseState = MaterialSkin.MouseState.HOVER
@@ -417,8 +426,8 @@ Partial Class main
         Hamburger.Appearance = TabAppearance.Buttons
         Hamburger.Controls.Add(discordManagement)
         Hamburger.Controls.Add(monitorManagement)
+        Hamburger.Controls.Add(CLICreator)
         Hamburger.Controls.Add(helpLinks)
-        Hamburger.Controls.Add(TabPage1)
         Hamburger.Depth = 0
         Hamburger.ImageList = ImageList1
         Hamburger.Location = New Point(6, 67)
@@ -604,27 +613,28 @@ Partial Class main
         ' 
         ' monitorManagement
         ' 
-        monitorManagement.Controls.Add(monitorAutoUpdate)
-        monitorManagement.Controls.Add(compositorSafe)
-        monitorManagement.Controls.Add(MaterialLabel26)
-        monitorManagement.Controls.Add(MaterialLabel25)
-        monitorManagement.Controls.Add(obscureSS)
+        monitorManagement.Controls.Add(deleteLog)
         monitorManagement.Controls.Add(selfieMode)
-        monitorManagement.Controls.Add(numSelfieInterval)
-        monitorManagement.Controls.Add(monitorTask)
-        monitorManagement.Controls.Add(btnCleanLog)
+        monitorManagement.Controls.Add(MaterialLabel26)
         monitorManagement.Controls.Add(txtLogDir)
+        monitorManagement.Controls.Add(btnCleanLog)
+        monitorManagement.Controls.Add(compositorSafe)
+        monitorManagement.Controls.Add(monitorTask)
         monitorManagement.Controls.Add(btnBrowseLogDir)
         monitorManagement.Controls.Add(chkMonitorChat)
-        monitorManagement.Controls.Add(numIntervalSecond)
+        monitorManagement.Controls.Add(DarkModeEnabled)
+        monitorManagement.Controls.Add(MaterialLabel25)
+        monitorManagement.Controls.Add(monitorAutoUpdate)
         monitorManagement.Controls.Add(monitorQuest)
         monitorManagement.Controls.Add(skillIssue)
-        monitorManagement.Controls.Add(MaterialLabel1)
+        monitorManagement.Controls.Add(obscureSS)
         monitorManagement.Controls.Add(captureWin)
         monitorManagement.Controls.Add(questError)
+        monitorManagement.Controls.Add(numSelfieInterval)
         monitorManagement.Controls.Add(autoClean)
         monitorManagement.Controls.Add(combatError)
-        monitorManagement.Controls.Add(DarkModeEnabled)
+        monitorManagement.Controls.Add(MaterialLabel1)
+        monitorManagement.Controls.Add(numIntervalSecond)
         monitorManagement.ImageKey = "monitoring.png"
         monitorManagement.Location = New Point(4, 46)
         monitorManagement.Name = "monitorManagement"
@@ -634,84 +644,31 @@ Partial Class main
         monitorManagement.Text = "Monitor Management"
         monitorManagement.UseVisualStyleBackColor = True
         ' 
-        ' monitorAutoUpdate
+        ' deleteLog
         ' 
-        monitorAutoUpdate.AutoSize = True
-        monitorAutoUpdate.Depth = 0
-        monitorAutoUpdate.Location = New Point(538, 123)
-        monitorAutoUpdate.Margin = New Padding(0)
-        monitorAutoUpdate.MouseLocation = New Point(-1, -1)
-        monitorAutoUpdate.MouseState = MaterialSkin.MouseState.HOVER
-        monitorAutoUpdate.Name = "monitorAutoUpdate"
-        monitorAutoUpdate.Ripple = True
-        monitorAutoUpdate.Size = New Size(204, 37)
-        monitorAutoUpdate.TabIndex = 81
-        monitorAutoUpdate.Text = "Auto-Update Monitor"
-        monitorAutoUpdate.UseVisualStyleBackColor = True
-        ' 
-        ' compositorSafe
-        ' 
-        compositorSafe.AutoSize = True
-        compositorSafe.Depth = 0
-        compositorSafe.Location = New Point(538, 86)
-        compositorSafe.Margin = New Padding(0)
-        compositorSafe.MouseLocation = New Point(-1, -1)
-        compositorSafe.MouseState = MaterialSkin.MouseState.HOVER
-        compositorSafe.Name = "compositorSafe"
-        compositorSafe.Ripple = True
-        compositorSafe.Size = New Size(304, 37)
-        compositorSafe.TabIndex = 80
-        compositorSafe.Text = "Screenshot Compositor Safe-Mode"
-        compositorSafe.UseVisualStyleBackColor = True
-        ' 
-        ' MaterialLabel26
-        ' 
-        MaterialLabel26.AutoSize = True
-        MaterialLabel26.Depth = 0
-        MaterialLabel26.Font = New Font("Roboto", 10.0F, FontStyle.Regular, GraphicsUnit.Pixel)
-        MaterialLabel26.FontType = MaterialSkin.MaterialSkinManager.fontType.Overline
-        MaterialLabel26.Location = New Point(550, 62)
-        MaterialLabel26.MouseState = MaterialSkin.MouseState.HOVER
-        MaterialLabel26.Name = "MaterialLabel26"
-        MaterialLabel26.Size = New Size(208, 13)
-        MaterialLabel26.TabIndex = 79
-        MaterialLabel26.Text = "screenshots of errors, quests, chat, tasks, selfies"
-        MaterialLabel26.UseAccent = True
-        ' 
-        ' MaterialLabel25
-        ' 
-        MaterialLabel25.AutoSize = True
-        MaterialLabel25.Depth = 0
-        MaterialLabel25.Font = New Font("Roboto", 10.0F, FontStyle.Regular, GraphicsUnit.Pixel)
-        MaterialLabel25.FontType = MaterialSkin.MaterialSkinManager.fontType.Overline
-        MaterialLabel25.Location = New Point(550, 49)
-        MaterialLabel25.MouseState = MaterialSkin.MouseState.HOVER
-        MaterialLabel25.Name = "MaterialLabel25"
-        MaterialLabel25.Size = New Size(186, 13)
-        MaterialLabel25.TabIndex = 78
-        MaterialLabel25.Text = "Hides all important information in game for"
-        MaterialLabel25.UseAccent = True
-        ' 
-        ' obscureSS
-        ' 
-        obscureSS.AutoSize = True
-        obscureSS.Depth = 0
-        obscureSS.Location = New Point(538, 12)
-        obscureSS.Margin = New Padding(0)
-        obscureSS.MouseLocation = New Point(-1, -1)
-        obscureSS.MouseState = MaterialSkin.MouseState.HOVER
-        obscureSS.Name = "obscureSS"
-        obscureSS.Ripple = True
-        obscureSS.Size = New Size(262, 37)
-        obscureSS.TabIndex = 77
-        obscureSS.Text = "In-Game Screenshot Obscure"
-        obscureSS.UseVisualStyleBackColor = True
+        deleteLog.AutoSize = False
+        deleteLog.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        deleteLog.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default
+        deleteLog.Depth = 0
+        deleteLog.HighEmphasis = True
+        deleteLog.Icon = Nothing
+        deleteLog.Location = New Point(1271, 101)
+        deleteLog.Margin = New Padding(4, 6, 4, 6)
+        deleteLog.MouseState = MaterialSkin.MouseState.HOVER
+        deleteLog.Name = "deleteLog"
+        deleteLog.NoAccentTextColor = Color.Empty
+        deleteLog.Size = New Size(31, 47)
+        deleteLog.TabIndex = 82
+        deleteLog.Text = "X"
+        deleteLog.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained
+        deleteLog.UseAccentColor = False
+        deleteLog.UseVisualStyleBackColor = True
         ' 
         ' selfieMode
         ' 
         selfieMode.AutoSize = True
         selfieMode.Depth = 0
-        selfieMode.Location = New Point(313, 159)
+        selfieMode.Location = New Point(335, 151)
         selfieMode.Margin = New Padding(0)
         selfieMode.MouseLocation = New Point(-1, -1)
         selfieMode.MouseState = MaterialSkin.MouseState.HOVER
@@ -722,35 +679,36 @@ Partial Class main
         selfieMode.Text = "Selfie Mode"
         selfieMode.UseVisualStyleBackColor = True
         ' 
-        ' numSelfieInterval
+        ' MaterialLabel26
         ' 
-        numSelfieInterval.Depth = 0
-        numSelfieInterval.ForeColor = Color.FromArgb(CByte(222), CByte(0), CByte(0), CByte(0))
-        numSelfieInterval.Location = New Point(915, 58)
-        numSelfieInterval.MouseState = MaterialSkin.MouseState.HOVER
-        numSelfieInterval.Name = "numSelfieInterval"
-        numSelfieInterval.RangeMax = 60
-        numSelfieInterval.Size = New Size(359, 40)
-        numSelfieInterval.TabIndex = 75
-        numSelfieInterval.Text = "Selfie Interval"
-        numSelfieInterval.UseAccentColor = True
-        numSelfieInterval.Value = 10
-        numSelfieInterval.ValueSuffix = " Minutes"
+        MaterialLabel26.AutoSize = True
+        MaterialLabel26.Depth = 0
+        MaterialLabel26.Font = New Font("Roboto", 10.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        MaterialLabel26.FontType = MaterialSkin.MaterialSkinManager.fontType.Overline
+        MaterialLabel26.Location = New Point(622, 127)
+        MaterialLabel26.MouseState = MaterialSkin.MouseState.HOVER
+        MaterialLabel26.Name = "MaterialLabel26"
+        MaterialLabel26.Size = New Size(208, 13)
+        MaterialLabel26.TabIndex = 79
+        MaterialLabel26.Text = "screenshots of errors, quests, chat, tasks, selfies"
+        MaterialLabel26.UseAccent = True
         ' 
-        ' monitorTask
+        ' txtLogDir
         ' 
-        monitorTask.AutoSize = True
-        monitorTask.Depth = 0
-        monitorTask.Location = New Point(313, 12)
-        monitorTask.Margin = New Padding(0)
-        monitorTask.MouseLocation = New Point(-1, -1)
-        monitorTask.MouseState = MaterialSkin.MouseState.HOVER
-        monitorTask.Name = "monitorTask"
-        monitorTask.Ripple = True
-        monitorTask.Size = New Size(160, 37)
-        monitorTask.TabIndex = 74
-        monitorTask.Text = "Monitor Tasks"
-        monitorTask.UseVisualStyleBackColor = True
+        txtLogDir.AnimateReadOnly = False
+        txtLogDir.BorderStyle = BorderStyle.None
+        txtLogDir.Depth = 0
+        txtLogDir.Font = New Font("Roboto", 16.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        txtLogDir.LeadingIcon = Nothing
+        txtLogDir.Location = New Point(914, 101)
+        txtLogDir.MaxLength = 50
+        txtLogDir.MouseState = MaterialSkin.MouseState.OUT
+        txtLogDir.Multiline = False
+        txtLogDir.Name = "txtLogDir"
+        txtLogDir.Size = New Size(350, 50)
+        txtLogDir.TabIndex = 52
+        txtLogDir.Text = ""
+        txtLogDir.TrailingIcon = Nothing
         ' 
         ' btnCleanLog
         ' 
@@ -760,7 +718,7 @@ Partial Class main
         btnCleanLog.Depth = 0
         btnCleanLog.HighEmphasis = True
         btnCleanLog.Icon = Nothing
-        btnCleanLog.Location = New Point(915, 158)
+        btnCleanLog.Location = New Point(914, 160)
         btnCleanLog.Margin = New Padding(4, 6, 4, 6)
         btnCleanLog.MouseState = MaterialSkin.MouseState.HOVER
         btnCleanLog.Name = "btnCleanLog"
@@ -772,240 +730,117 @@ Partial Class main
         btnCleanLog.UseAccentColor = False
         btnCleanLog.UseVisualStyleBackColor = True
         ' 
-        ' txtLogDir
+        ' compositorSafe
         ' 
-        txtLogDir.AnimateReadOnly = False
-        txtLogDir.BorderStyle = BorderStyle.None
-        txtLogDir.Depth = 0
-        txtLogDir.Font = New Font("Roboto", 16.0F, FontStyle.Regular, GraphicsUnit.Pixel)
-        txtLogDir.LeadingIcon = Nothing
-        txtLogDir.Location = New Point(915, 99)
-        txtLogDir.MaxLength = 50
-        txtLogDir.MouseState = MaterialSkin.MouseState.OUT
-        txtLogDir.Multiline = False
-        txtLogDir.Name = "txtLogDir"
-        txtLogDir.Size = New Size(389, 50)
-        txtLogDir.TabIndex = 52
-        txtLogDir.Text = ""
-        txtLogDir.TrailingIcon = Nothing
+        compositorSafe.AutoSize = True
+        compositorSafe.Depth = 0
+        compositorSafe.Location = New Point(564, 40)
+        compositorSafe.Margin = New Padding(0)
+        compositorSafe.MouseLocation = New Point(-1, -1)
+        compositorSafe.MouseState = MaterialSkin.MouseState.HOVER
+        compositorSafe.Name = "compositorSafe"
+        compositorSafe.Ripple = True
+        compositorSafe.Size = New Size(304, 37)
+        compositorSafe.TabIndex = 80
+        compositorSafe.Text = "Screenshot Compositor Safe-Mode"
+        compositorSafe.UseVisualStyleBackColor = True
         ' 
-        ' helpLinks
+        ' monitorTask
         ' 
-        helpLinks.Controls.Add(MaterialMultiLineTextBox1)
-        helpLinks.Controls.Add(p2pgearBtn)
-        helpLinks.Controls.Add(p2psurvivalBtn)
-        helpLinks.Controls.Add(p2psetupBtn)
-        helpLinks.Controls.Add(p2psalesBtn)
-        helpLinks.Controls.Add(dbforumBtn)
-        helpLinks.Controls.Add(dbdiscordBtn)
-        helpLinks.Controls.Add(p2pdiscordBtn)
-        helpLinks.Controls.Add(wikiBtn)
-        helpLinks.ImageKey = "information-button.png"
-        helpLinks.Location = New Point(4, 46)
-        helpLinks.Name = "helpLinks"
-        helpLinks.Padding = New Padding(3)
-        helpLinks.Size = New Size(1310, 170)
-        helpLinks.TabIndex = 2
-        helpLinks.Text = "Information"
-        helpLinks.UseVisualStyleBackColor = True
+        monitorTask.AutoSize = True
+        monitorTask.Depth = 0
+        monitorTask.Location = New Point(335, 3)
+        monitorTask.Margin = New Padding(0)
+        monitorTask.MouseLocation = New Point(-1, -1)
+        monitorTask.MouseState = MaterialSkin.MouseState.HOVER
+        monitorTask.Name = "monitorTask"
+        monitorTask.Ripple = True
+        monitorTask.Size = New Size(160, 37)
+        monitorTask.TabIndex = 74
+        monitorTask.Text = "Monitor Tasks"
+        monitorTask.UseVisualStyleBackColor = True
         ' 
-        ' MaterialMultiLineTextBox1
+        ' MaterialLabel25
         ' 
-        MaterialMultiLineTextBox1.BackColor = Color.FromArgb(CByte(255), CByte(255), CByte(255))
-        MaterialMultiLineTextBox1.BorderStyle = BorderStyle.None
-        MaterialMultiLineTextBox1.Depth = 0
-        MaterialMultiLineTextBox1.Font = New Font("Roboto SemiBold", 11.25F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        MaterialMultiLineTextBox1.ForeColor = Color.FromArgb(CByte(222), CByte(0), CByte(0), CByte(0))
-        MaterialMultiLineTextBox1.Location = New Point(719, 6)
-        MaterialMultiLineTextBox1.MouseState = MaterialSkin.MouseState.HOVER
-        MaterialMultiLineTextBox1.Name = "MaterialMultiLineTextBox1"
-        MaterialMultiLineTextBox1.ReadOnly = True
-        MaterialMultiLineTextBox1.Size = New Size(529, 194)
-        MaterialMultiLineTextBox1.TabIndex = 8
-        MaterialMultiLineTextBox1.Text = resources.GetString("MaterialMultiLineTextBox1.Text")
+        MaterialLabel25.AutoSize = True
+        MaterialLabel25.Depth = 0
+        MaterialLabel25.Font = New Font("Roboto", 10.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+        MaterialLabel25.FontType = MaterialSkin.MaterialSkinManager.fontType.Overline
+        MaterialLabel25.Location = New Point(622, 114)
+        MaterialLabel25.MouseState = MaterialSkin.MouseState.HOVER
+        MaterialLabel25.Name = "MaterialLabel25"
+        MaterialLabel25.Size = New Size(186, 13)
+        MaterialLabel25.TabIndex = 78
+        MaterialLabel25.Text = "Hides all important information in game for"
+        MaterialLabel25.UseAccent = True
         ' 
-        ' p2pgearBtn
+        ' monitorAutoUpdate
         ' 
-        p2pgearBtn.AutoSize = False
-        p2pgearBtn.AutoSizeMode = AutoSizeMode.GrowAndShrink
-        p2pgearBtn.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Dense
-        p2pgearBtn.Depth = 0
-        p2pgearBtn.HighEmphasis = True
-        p2pgearBtn.Icon = Nothing
-        p2pgearBtn.Location = New Point(383, 158)
-        p2pgearBtn.Margin = New Padding(4, 6, 4, 6)
-        p2pgearBtn.MouseState = MaterialSkin.MouseState.HOVER
-        p2pgearBtn.Name = "p2pgearBtn"
-        p2pgearBtn.NoAccentTextColor = Color.Empty
-        p2pgearBtn.Size = New Size(158, 32)
-        p2pgearBtn.TabIndex = 7
-        p2pgearBtn.Text = "P2P Supported Gear"
-        p2pgearBtn.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined
-        p2pgearBtn.UseAccentColor = True
-        p2pgearBtn.UseVisualStyleBackColor = True
+        monitorAutoUpdate.AutoSize = True
+        monitorAutoUpdate.Depth = 0
+        monitorAutoUpdate.Location = New Point(564, 3)
+        monitorAutoUpdate.Margin = New Padding(0)
+        monitorAutoUpdate.MouseLocation = New Point(-1, -1)
+        monitorAutoUpdate.MouseState = MaterialSkin.MouseState.HOVER
+        monitorAutoUpdate.Name = "monitorAutoUpdate"
+        monitorAutoUpdate.Ripple = True
+        monitorAutoUpdate.Size = New Size(204, 37)
+        monitorAutoUpdate.TabIndex = 81
+        monitorAutoUpdate.Text = "Auto-Update Monitor"
+        monitorAutoUpdate.UseVisualStyleBackColor = True
         ' 
-        ' p2psurvivalBtn
+        ' obscureSS
         ' 
-        p2psurvivalBtn.AutoSize = False
-        p2psurvivalBtn.AutoSizeMode = AutoSizeMode.GrowAndShrink
-        p2psurvivalBtn.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Dense
-        p2psurvivalBtn.Depth = 0
-        p2psurvivalBtn.HighEmphasis = True
-        p2psurvivalBtn.Icon = Nothing
-        p2psurvivalBtn.Location = New Point(383, 110)
-        p2psurvivalBtn.Margin = New Padding(4, 6, 4, 6)
-        p2psurvivalBtn.MouseState = MaterialSkin.MouseState.HOVER
-        p2psurvivalBtn.Name = "p2psurvivalBtn"
-        p2psurvivalBtn.NoAccentTextColor = Color.Empty
-        p2psurvivalBtn.Size = New Size(158, 32)
-        p2psurvivalBtn.TabIndex = 6
-        p2psurvivalBtn.Text = "P2P Survival Guide"
-        p2psurvivalBtn.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined
-        p2psurvivalBtn.UseAccentColor = True
-        p2psurvivalBtn.UseVisualStyleBackColor = True
+        obscureSS.AutoSize = True
+        obscureSS.Depth = 0
+        obscureSS.Location = New Point(564, 77)
+        obscureSS.Margin = New Padding(0)
+        obscureSS.MouseLocation = New Point(-1, -1)
+        obscureSS.MouseState = MaterialSkin.MouseState.HOVER
+        obscureSS.Name = "obscureSS"
+        obscureSS.Ripple = True
+        obscureSS.Size = New Size(262, 37)
+        obscureSS.TabIndex = 77
+        obscureSS.Text = "In-Game Screenshot Obscure"
+        obscureSS.UseVisualStyleBackColor = True
         ' 
-        ' p2psetupBtn
+        ' numSelfieInterval
         ' 
-        p2psetupBtn.AutoSize = False
-        p2psetupBtn.AutoSizeMode = AutoSizeMode.GrowAndShrink
-        p2psetupBtn.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Dense
-        p2psetupBtn.Depth = 0
-        p2psetupBtn.HighEmphasis = True
-        p2psetupBtn.Icon = Nothing
-        p2psetupBtn.Location = New Point(383, 62)
-        p2psetupBtn.Margin = New Padding(4, 6, 4, 6)
-        p2psetupBtn.MouseState = MaterialSkin.MouseState.HOVER
-        p2psetupBtn.Name = "p2psetupBtn"
-        p2psetupBtn.NoAccentTextColor = Color.Empty
-        p2psetupBtn.Size = New Size(158, 32)
-        p2psetupBtn.TabIndex = 5
-        p2psetupBtn.Text = "P2P Setup Guide"
-        p2psetupBtn.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined
-        p2psetupBtn.UseAccentColor = True
-        p2psetupBtn.UseVisualStyleBackColor = True
+        numSelfieInterval.Depth = 0
+        numSelfieInterval.ForeColor = Color.FromArgb(CByte(222), CByte(0), CByte(0), CByte(0))
+        numSelfieInterval.Location = New Point(914, 54)
+        numSelfieInterval.MouseState = MaterialSkin.MouseState.HOVER
+        numSelfieInterval.Name = "numSelfieInterval"
+        numSelfieInterval.RangeMax = 60
+        numSelfieInterval.Size = New Size(359, 40)
+        numSelfieInterval.TabIndex = 75
+        numSelfieInterval.Text = "Selfie Interval"
+        numSelfieInterval.UseAccentColor = True
+        numSelfieInterval.Value = 10
+        numSelfieInterval.ValueSuffix = " Minutes"
         ' 
-        ' p2psalesBtn
+        ' CLICreator
         ' 
-        p2psalesBtn.AutoSize = False
-        p2psalesBtn.AutoSizeMode = AutoSizeMode.GrowAndShrink
-        p2psalesBtn.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Dense
-        p2psalesBtn.Depth = 0
-        p2psalesBtn.HighEmphasis = True
-        p2psalesBtn.Icon = Nothing
-        p2psalesBtn.Location = New Point(383, 14)
-        p2psalesBtn.Margin = New Padding(4, 6, 4, 6)
-        p2psalesBtn.MouseState = MaterialSkin.MouseState.HOVER
-        p2psalesBtn.Name = "p2psalesBtn"
-        p2psalesBtn.NoAccentTextColor = Color.Empty
-        p2psalesBtn.Size = New Size(158, 32)
-        p2psalesBtn.TabIndex = 4
-        p2psalesBtn.Text = "P2P Sales Page"
-        p2psalesBtn.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined
-        p2psalesBtn.UseAccentColor = True
-        p2psalesBtn.UseVisualStyleBackColor = True
-        ' 
-        ' dbforumBtn
-        ' 
-        dbforumBtn.AutoSize = False
-        dbforumBtn.AutoSizeMode = AutoSizeMode.GrowAndShrink
-        dbforumBtn.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Dense
-        dbforumBtn.Depth = 0
-        dbforumBtn.HighEmphasis = True
-        dbforumBtn.Icon = Nothing
-        dbforumBtn.Location = New Point(217, 158)
-        dbforumBtn.Margin = New Padding(4, 6, 4, 6)
-        dbforumBtn.MouseState = MaterialSkin.MouseState.HOVER
-        dbforumBtn.Name = "dbforumBtn"
-        dbforumBtn.NoAccentTextColor = Color.Empty
-        dbforumBtn.Size = New Size(158, 32)
-        dbforumBtn.TabIndex = 3
-        dbforumBtn.Text = "Dreambot Forum"
-        dbforumBtn.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined
-        dbforumBtn.UseAccentColor = True
-        dbforumBtn.UseVisualStyleBackColor = True
-        ' 
-        ' dbdiscordBtn
-        ' 
-        dbdiscordBtn.AutoSize = False
-        dbdiscordBtn.AutoSizeMode = AutoSizeMode.GrowAndShrink
-        dbdiscordBtn.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Dense
-        dbdiscordBtn.Depth = 0
-        dbdiscordBtn.HighEmphasis = True
-        dbdiscordBtn.Icon = Nothing
-        dbdiscordBtn.Location = New Point(217, 110)
-        dbdiscordBtn.Margin = New Padding(4, 6, 4, 6)
-        dbdiscordBtn.MouseState = MaterialSkin.MouseState.HOVER
-        dbdiscordBtn.Name = "dbdiscordBtn"
-        dbdiscordBtn.NoAccentTextColor = Color.Empty
-        dbdiscordBtn.Size = New Size(158, 32)
-        dbdiscordBtn.TabIndex = 2
-        dbdiscordBtn.Text = "Dreambot Discord"
-        dbdiscordBtn.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined
-        dbdiscordBtn.UseAccentColor = True
-        dbdiscordBtn.UseVisualStyleBackColor = True
-        ' 
-        ' p2pdiscordBtn
-        ' 
-        p2pdiscordBtn.AutoSize = False
-        p2pdiscordBtn.AutoSizeMode = AutoSizeMode.GrowAndShrink
-        p2pdiscordBtn.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Dense
-        p2pdiscordBtn.Depth = 0
-        p2pdiscordBtn.HighEmphasis = True
-        p2pdiscordBtn.Icon = Nothing
-        p2pdiscordBtn.Location = New Point(217, 62)
-        p2pdiscordBtn.Margin = New Padding(4, 6, 4, 6)
-        p2pdiscordBtn.MouseState = MaterialSkin.MouseState.HOVER
-        p2pdiscordBtn.Name = "p2pdiscordBtn"
-        p2pdiscordBtn.NoAccentTextColor = Color.Empty
-        p2pdiscordBtn.Size = New Size(158, 32)
-        p2pdiscordBtn.TabIndex = 1
-        p2pdiscordBtn.Text = "P2P Discord"
-        p2pdiscordBtn.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined
-        p2pdiscordBtn.UseAccentColor = True
-        p2pdiscordBtn.UseVisualStyleBackColor = True
-        ' 
-        ' wikiBtn
-        ' 
-        wikiBtn.AutoSize = False
-        wikiBtn.AutoSizeMode = AutoSizeMode.GrowAndShrink
-        wikiBtn.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Dense
-        wikiBtn.Depth = 0
-        wikiBtn.HighEmphasis = True
-        wikiBtn.Icon = Nothing
-        wikiBtn.Location = New Point(217, 14)
-        wikiBtn.Margin = New Padding(4, 6, 4, 6)
-        wikiBtn.MouseState = MaterialSkin.MouseState.HOVER
-        wikiBtn.Name = "wikiBtn"
-        wikiBtn.NoAccentTextColor = Color.Empty
-        wikiBtn.Size = New Size(158, 32)
-        wikiBtn.TabIndex = 0
-        wikiBtn.Text = "P2P Wiki"
-        wikiBtn.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined
-        wikiBtn.UseAccentColor = True
-        wikiBtn.UseVisualStyleBackColor = True
-        ' 
-        ' TabPage1
-        ' 
-        TabPage1.Controls.Add(launchP2P)
-        TabPage1.Controls.Add(createCLI)
-        TabPage1.Controls.Add(cliOutput)
-        TabPage1.Controls.Add(txtWorld)
-        TabPage1.Controls.Add(freshStart)
-        TabPage1.Controls.Add(covertMode)
-        TabPage1.Controls.Add(ramNum)
-        TabPage1.Controls.Add(btnDBPath)
-        TabPage1.Controls.Add(dbPath)
-        TabPage1.Controls.Add(btnAddAcc)
-        TabPage1.Controls.Add(accountNames)
-        TabPage1.ImageKey = "copy-writing.png"
-        TabPage1.Location = New Point(4, 46)
-        TabPage1.Name = "TabPage1"
-        TabPage1.Padding = New Padding(3)
-        TabPage1.RightToLeft = RightToLeft.Yes
-        TabPage1.Size = New Size(1310, 170)
-        TabPage1.TabIndex = 3
-        TabPage1.Text = "CLI Creator [Beta]"
-        TabPage1.UseVisualStyleBackColor = True
+        CLICreator.Controls.Add(launchP2P)
+        CLICreator.Controls.Add(createCLI)
+        CLICreator.Controls.Add(cliOutput)
+        CLICreator.Controls.Add(txtWorld)
+        CLICreator.Controls.Add(freshStart)
+        CLICreator.Controls.Add(covertMode)
+        CLICreator.Controls.Add(ramNum)
+        CLICreator.Controls.Add(btnDBPath)
+        CLICreator.Controls.Add(dbPath)
+        CLICreator.Controls.Add(btnAddAcc)
+        CLICreator.Controls.Add(accountNames)
+        CLICreator.ImageKey = "copy-writing.png"
+        CLICreator.Location = New Point(4, 46)
+        CLICreator.Name = "CLICreator"
+        CLICreator.Padding = New Padding(3)
+        CLICreator.RightToLeft = RightToLeft.Yes
+        CLICreator.Size = New Size(1310, 170)
+        CLICreator.TabIndex = 3
+        CLICreator.Text = "CLI Creator [Beta]"
+        CLICreator.UseVisualStyleBackColor = True
         ' 
         ' launchP2P
         ' 
@@ -1212,6 +1047,201 @@ Partial Class main
         accountNames.StartIndex = 0
         accountNames.TabIndex = 0
         ' 
+        ' helpLinks
+        ' 
+        helpLinks.Controls.Add(MaterialMultiLineTextBox1)
+        helpLinks.Controls.Add(p2pgearBtn)
+        helpLinks.Controls.Add(p2psurvivalBtn)
+        helpLinks.Controls.Add(p2psetupBtn)
+        helpLinks.Controls.Add(p2psalesBtn)
+        helpLinks.Controls.Add(dbforumBtn)
+        helpLinks.Controls.Add(dbdiscordBtn)
+        helpLinks.Controls.Add(p2pdiscordBtn)
+        helpLinks.Controls.Add(wikiBtn)
+        helpLinks.ImageKey = "information-button.png"
+        helpLinks.Location = New Point(4, 46)
+        helpLinks.Name = "helpLinks"
+        helpLinks.Padding = New Padding(3)
+        helpLinks.Size = New Size(1310, 170)
+        helpLinks.TabIndex = 2
+        helpLinks.Text = "Information"
+        helpLinks.UseVisualStyleBackColor = True
+        ' 
+        ' MaterialMultiLineTextBox1
+        ' 
+        MaterialMultiLineTextBox1.BackColor = Color.FromArgb(CByte(255), CByte(255), CByte(255))
+        MaterialMultiLineTextBox1.BorderStyle = BorderStyle.None
+        MaterialMultiLineTextBox1.Depth = 0
+        MaterialMultiLineTextBox1.Font = New Font("Roboto SemiBold", 11.25F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        MaterialMultiLineTextBox1.ForeColor = Color.FromArgb(CByte(222), CByte(0), CByte(0), CByte(0))
+        MaterialMultiLineTextBox1.Location = New Point(719, 6)
+        MaterialMultiLineTextBox1.MouseState = MaterialSkin.MouseState.HOVER
+        MaterialMultiLineTextBox1.Name = "MaterialMultiLineTextBox1"
+        MaterialMultiLineTextBox1.ReadOnly = True
+        MaterialMultiLineTextBox1.Size = New Size(529, 194)
+        MaterialMultiLineTextBox1.TabIndex = 8
+        MaterialMultiLineTextBox1.Text = resources.GetString("MaterialMultiLineTextBox1.Text")
+        ' 
+        ' p2pgearBtn
+        ' 
+        p2pgearBtn.AutoSize = False
+        p2pgearBtn.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        p2pgearBtn.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Dense
+        p2pgearBtn.Depth = 0
+        p2pgearBtn.HighEmphasis = True
+        p2pgearBtn.Icon = Nothing
+        p2pgearBtn.Location = New Point(383, 158)
+        p2pgearBtn.Margin = New Padding(4, 6, 4, 6)
+        p2pgearBtn.MouseState = MaterialSkin.MouseState.HOVER
+        p2pgearBtn.Name = "p2pgearBtn"
+        p2pgearBtn.NoAccentTextColor = Color.Empty
+        p2pgearBtn.Size = New Size(158, 32)
+        p2pgearBtn.TabIndex = 7
+        p2pgearBtn.Text = "P2P Supported Gear"
+        p2pgearBtn.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined
+        p2pgearBtn.UseAccentColor = True
+        p2pgearBtn.UseVisualStyleBackColor = True
+        ' 
+        ' p2psurvivalBtn
+        ' 
+        p2psurvivalBtn.AutoSize = False
+        p2psurvivalBtn.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        p2psurvivalBtn.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Dense
+        p2psurvivalBtn.Depth = 0
+        p2psurvivalBtn.HighEmphasis = True
+        p2psurvivalBtn.Icon = Nothing
+        p2psurvivalBtn.Location = New Point(383, 110)
+        p2psurvivalBtn.Margin = New Padding(4, 6, 4, 6)
+        p2psurvivalBtn.MouseState = MaterialSkin.MouseState.HOVER
+        p2psurvivalBtn.Name = "p2psurvivalBtn"
+        p2psurvivalBtn.NoAccentTextColor = Color.Empty
+        p2psurvivalBtn.Size = New Size(158, 32)
+        p2psurvivalBtn.TabIndex = 6
+        p2psurvivalBtn.Text = "P2P Survival Guide"
+        p2psurvivalBtn.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined
+        p2psurvivalBtn.UseAccentColor = True
+        p2psurvivalBtn.UseVisualStyleBackColor = True
+        ' 
+        ' p2psetupBtn
+        ' 
+        p2psetupBtn.AutoSize = False
+        p2psetupBtn.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        p2psetupBtn.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Dense
+        p2psetupBtn.Depth = 0
+        p2psetupBtn.HighEmphasis = True
+        p2psetupBtn.Icon = Nothing
+        p2psetupBtn.Location = New Point(383, 62)
+        p2psetupBtn.Margin = New Padding(4, 6, 4, 6)
+        p2psetupBtn.MouseState = MaterialSkin.MouseState.HOVER
+        p2psetupBtn.Name = "p2psetupBtn"
+        p2psetupBtn.NoAccentTextColor = Color.Empty
+        p2psetupBtn.Size = New Size(158, 32)
+        p2psetupBtn.TabIndex = 5
+        p2psetupBtn.Text = "P2P Setup Guide"
+        p2psetupBtn.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined
+        p2psetupBtn.UseAccentColor = True
+        p2psetupBtn.UseVisualStyleBackColor = True
+        ' 
+        ' p2psalesBtn
+        ' 
+        p2psalesBtn.AutoSize = False
+        p2psalesBtn.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        p2psalesBtn.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Dense
+        p2psalesBtn.Depth = 0
+        p2psalesBtn.HighEmphasis = True
+        p2psalesBtn.Icon = Nothing
+        p2psalesBtn.Location = New Point(383, 14)
+        p2psalesBtn.Margin = New Padding(4, 6, 4, 6)
+        p2psalesBtn.MouseState = MaterialSkin.MouseState.HOVER
+        p2psalesBtn.Name = "p2psalesBtn"
+        p2psalesBtn.NoAccentTextColor = Color.Empty
+        p2psalesBtn.Size = New Size(158, 32)
+        p2psalesBtn.TabIndex = 4
+        p2psalesBtn.Text = "P2P Sales Page"
+        p2psalesBtn.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined
+        p2psalesBtn.UseAccentColor = True
+        p2psalesBtn.UseVisualStyleBackColor = True
+        ' 
+        ' dbforumBtn
+        ' 
+        dbforumBtn.AutoSize = False
+        dbforumBtn.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        dbforumBtn.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Dense
+        dbforumBtn.Depth = 0
+        dbforumBtn.HighEmphasis = True
+        dbforumBtn.Icon = Nothing
+        dbforumBtn.Location = New Point(217, 158)
+        dbforumBtn.Margin = New Padding(4, 6, 4, 6)
+        dbforumBtn.MouseState = MaterialSkin.MouseState.HOVER
+        dbforumBtn.Name = "dbforumBtn"
+        dbforumBtn.NoAccentTextColor = Color.Empty
+        dbforumBtn.Size = New Size(158, 32)
+        dbforumBtn.TabIndex = 3
+        dbforumBtn.Text = "Dreambot Forum"
+        dbforumBtn.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined
+        dbforumBtn.UseAccentColor = True
+        dbforumBtn.UseVisualStyleBackColor = True
+        ' 
+        ' dbdiscordBtn
+        ' 
+        dbdiscordBtn.AutoSize = False
+        dbdiscordBtn.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        dbdiscordBtn.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Dense
+        dbdiscordBtn.Depth = 0
+        dbdiscordBtn.HighEmphasis = True
+        dbdiscordBtn.Icon = Nothing
+        dbdiscordBtn.Location = New Point(217, 110)
+        dbdiscordBtn.Margin = New Padding(4, 6, 4, 6)
+        dbdiscordBtn.MouseState = MaterialSkin.MouseState.HOVER
+        dbdiscordBtn.Name = "dbdiscordBtn"
+        dbdiscordBtn.NoAccentTextColor = Color.Empty
+        dbdiscordBtn.Size = New Size(158, 32)
+        dbdiscordBtn.TabIndex = 2
+        dbdiscordBtn.Text = "Dreambot Discord"
+        dbdiscordBtn.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined
+        dbdiscordBtn.UseAccentColor = True
+        dbdiscordBtn.UseVisualStyleBackColor = True
+        ' 
+        ' p2pdiscordBtn
+        ' 
+        p2pdiscordBtn.AutoSize = False
+        p2pdiscordBtn.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        p2pdiscordBtn.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Dense
+        p2pdiscordBtn.Depth = 0
+        p2pdiscordBtn.HighEmphasis = True
+        p2pdiscordBtn.Icon = Nothing
+        p2pdiscordBtn.Location = New Point(217, 62)
+        p2pdiscordBtn.Margin = New Padding(4, 6, 4, 6)
+        p2pdiscordBtn.MouseState = MaterialSkin.MouseState.HOVER
+        p2pdiscordBtn.Name = "p2pdiscordBtn"
+        p2pdiscordBtn.NoAccentTextColor = Color.Empty
+        p2pdiscordBtn.Size = New Size(158, 32)
+        p2pdiscordBtn.TabIndex = 1
+        p2pdiscordBtn.Text = "P2P Discord"
+        p2pdiscordBtn.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined
+        p2pdiscordBtn.UseAccentColor = True
+        p2pdiscordBtn.UseVisualStyleBackColor = True
+        ' 
+        ' wikiBtn
+        ' 
+        wikiBtn.AutoSize = False
+        wikiBtn.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        wikiBtn.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Dense
+        wikiBtn.Depth = 0
+        wikiBtn.HighEmphasis = True
+        wikiBtn.Icon = Nothing
+        wikiBtn.Location = New Point(217, 14)
+        wikiBtn.Margin = New Padding(4, 6, 4, 6)
+        wikiBtn.MouseState = MaterialSkin.MouseState.HOVER
+        wikiBtn.Name = "wikiBtn"
+        wikiBtn.NoAccentTextColor = Color.Empty
+        wikiBtn.Size = New Size(158, 32)
+        wikiBtn.TabIndex = 0
+        wikiBtn.Text = "P2P Wiki"
+        wikiBtn.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined
+        wikiBtn.UseAccentColor = True
+        wikiBtn.UseVisualStyleBackColor = True
+        ' 
         ' ImageList1
         ' 
         ImageList1.ColorDepth = ColorDepth.Depth32Bit
@@ -1221,6 +1251,7 @@ Partial Class main
         ImageList1.Images.SetKeyName(1, "copy-writing.png")
         ImageList1.Images.SetKeyName(2, "monitoring.png")
         ImageList1.Images.SetKeyName(3, "discord.png")
+        ImageList1.Images.SetKeyName(4, "settings.png")
         ' 
         ' embedEditors
         ' 
@@ -1346,17 +1377,18 @@ Partial Class main
         MaximizeBox = False
         Name = "main"
         Sizable = False
-        Text = "P2P Monitor v1.4.4 by CaS5"
+        Text = "P2P Monitor v1.4.5 by CaS5"
         Hamburger.ResumeLayout(False)
         discordManagement.ResumeLayout(False)
         discordManagement.PerformLayout()
         monitorManagement.ResumeLayout(False)
         monitorManagement.PerformLayout()
+        CLICreator.ResumeLayout(False)
+        CLICreator.PerformLayout()
         helpLinks.ResumeLayout(False)
-        TabPage1.ResumeLayout(False)
-        TabPage1.PerformLayout()
         ResumeLayout(False)
     End Sub
+
     Friend WithEvents btnStop As MaterialSkin.Controls.MaterialButton
     Friend WithEvents btnStart As MaterialSkin.Controls.MaterialButton
     Friend WithEvents btnBrowseLogDir As MaterialSkin.Controls.MaterialButton
@@ -1402,7 +1434,7 @@ Partial Class main
     Friend WithEvents taskEmbed As MaterialSkin.Controls.MaterialMultiLineTextBox
     Friend WithEvents numSelfieInterval As MaterialSkin.Controls.MaterialSlider
     Friend WithEvents selfieMode As MaterialSkin.Controls.MaterialSwitch
-    Friend WithEvents TabPage1 As TabPage
+    Friend WithEvents CLICreator As TabPage
     Friend WithEvents MaterialButton2 As MaterialSkin.Controls.MaterialButton
     Friend WithEvents MaterialTextBox11 As MaterialSkin.Controls.MaterialTextBox
     Friend WithEvents MaterialTextBox12 As MaterialSkin.Controls.MaterialTextBox
@@ -1445,4 +1477,5 @@ Partial Class main
     Friend WithEvents monitorAutoUpdate As MaterialSkin.Controls.MaterialSwitch
     Friend WithEvents selfieEmbed As MaterialSkin.Controls.MaterialMultiLineTextBox
     Friend WithEvents btnCheckUpdate As MaterialSkin.Controls.MaterialButton
+    Friend WithEvents deleteLog As MaterialSkin.Controls.MaterialButton
 End Class

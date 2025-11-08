@@ -15,6 +15,13 @@ Imports Microsoft.WindowsAPICodePack.Dialogs
 
 Public Class LogScanner
     Inherits MaterialForm
+    Protected Overrides ReadOnly Property CreateParams As CreateParams
+        Get
+            Dim cp = MyBase.CreateParams
+            cp.ExStyle = cp.ExStyle Or &H2000000 ' WS_EX_COMPOSITED
+            Return cp
+        End Get
+    End Property
 
     Private txtFolder As MaterialTextBox2
     Private btnBrowse As MaterialButton

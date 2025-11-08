@@ -3,7 +3,7 @@ Imports MaterialSkin.Controls
 
 Public Class Launcher
     Inherits MaterialForm
-
+    Private Shared appMutex As Threading.Mutex
     Private _autoLaunched As Boolean = False
 
     Public Sub New()
@@ -17,6 +17,30 @@ Public Class Launcher
         Me.MaximizeBox = False
         Me.StartPosition = FormStartPosition.CenterScreen
         saveChoice.Checked = My.Settings.RememberLastTool
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+
+        Dim createdNew As Boolean = False
+        Try
+            appMutex = New Threading.Mutex(
+            initiallyOwned:=True,
+            name:="P2P_Monitor_SingleInstance",
+            createdNew:=createdNew)
+        Catch
+            createdNew = True
+        End Try
+
+        If Not createdNew Then
+            MessageBox.Show(
+            Me,
+            "Another copy of P2P Monitor is already running.",
+            "Already running",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Information)
+            Environment.Exit(0)
+        End If
     End Sub
 
     Protected Overrides Sub OnShown(e As EventArgs)
@@ -52,13 +76,29 @@ Public Class Launcher
             My.Settings.Save()
         End If
 
-        Dim f As New main()
-        AddHandler f.FormClosed, Sub()
+        Dim existing As main = Nothing
+        For Each f As Form In Application.OpenForms
+            existing = TryCast(f, main)
+            If existing IsNot Nothing AndAlso Not existing.IsDisposed Then
+                Exit For
+            End If
+        Next
+
+        If existing IsNot Nothing AndAlso Not existing.IsDisposed Then
+            existing.Show()
+            existing.WindowState = FormWindowState.Normal
+            existing.Activate()
+            Me.Hide()
+            Return
+        End If
+
+        Dim m As New main()
+        AddHandler m.FormClosed, Sub()
                                      If Application.OpenForms.Count <= 1 AndAlso Not Me.IsDisposed Then
                                          Me.Show()
                                      End If
                                  End Sub
-        f.Show()
+        m.Show()
         Me.Hide()
     End Sub
 
