@@ -522,7 +522,6 @@ Public Class LogHelper
                     activity = Regex.Replace(stripPrefix(genericActivity), "^Activity is\s*", "", RegexOptions.IgnoreCase).Trim()
                 End If
 
-                'really the best I can do without seeing more logs, except everyone keeps cropping their shit. Stop doing that. I'm talking to you.
                 Dim bossingLine As Integer = -1
                 Dim bossingCheckMax As Integer = Math.Min(arr.Count - 1, i + 25)
                 For j As Integer = i + 1 To bossingCheckMax
@@ -537,7 +536,7 @@ Public Class LogHelper
                     Dim infernoStart As Integer = Math.Max(0, bossingLine - 25)
                     Dim infernoEnd As Integer = Math.Min(arr.Count - 1, bossingLine + 25)
                     For j As Integer = infernoStart To infernoEnd
-                        If arr(j).IndexOf("Infernal Cape", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                        If arr(j).IndexOf("You have the stats and quests needed for Inferno", StringComparison.OrdinalIgnoreCase) >= 0 Then
                             activity = "Inferno"
                             Exit For
                         End If

@@ -639,7 +639,7 @@ Public Class main
             My.Settings.Save()
         End If
         selfieEmbed.Text = My.Settings.SelfieEmbedSet
-        MetricsHelper.StartMetrics() 'Just comment out this line now if you don't wish to send updates for the live users
+        MetricsHelper.StartMetrics(AddressOf AppendLog) 'Just comment out this line now if you don't wish to send updates for the live users
         Await FetchFailRules()
         Await UpdateHelper.CheckForUpdatesAndPrompt(Me, AddressOf AppendLog,
                                                     Function() monitorAutoUpdate IsNot Nothing AndAlso monitorAutoUpdate.Checked)

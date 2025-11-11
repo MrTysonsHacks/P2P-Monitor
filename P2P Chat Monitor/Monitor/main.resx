@@ -117,6 +117,192 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="taskEmbed.Text" xml:space="preserve">
+    <value>{
+  "content": "",
+  "tts": false,
+  "embeds": [
+    {
+      "id": 244061115,
+      "description": "&lt;@{mention}&gt; - Detected P2P AI Chat Event\n\nLog: **{filename}**\nAccount: **{folder}**\n\n",
+      "fields": [
+        {
+          "id": 495459941,
+          "name": "Chat:",
+          "value": "{chat}",
+          "inline": false
+        },
+        {
+          "id": 617834865,
+          "name": "",
+          "value": ""
+        },
+        {
+          "id": 177252030,
+          "name": "Response:",
+          "value": "{response}"
+        }
+      ],
+      "title": "P2P AI Chat Event",
+      "footer": {
+        "text": "P2P Monitor Detection system - {time}"
+      },
+      "image": {
+        "url": "{screenshot}"
+      },
+      "color": 6029136
+    }
+  ],
+  "components": [],
+  "actions": {},
+  "flags": 0
+}</value>
+  </data>
+  <data name="errorEmbed.Text" xml:space="preserve">
+    <value>{
+  "content": "",
+  "tts": false,
+  "embeds": [
+    {
+      "id": 244061115,
+      "title": "P2P AI Error Detected",
+      "description": "&lt;@{mention}&gt; - Detected P2P AI {type} Error\n\nLog: **{filename}**\nAccount: **{folder}**\n\n",
+      "color": 16711680,
+      "footer": {
+        "text": "P2P Monitor Detection System - {time}"
+      },
+      "image": {
+        "url": "{screenshot}"
+      },
+      "fields": [
+        {
+          "id": 495459941,
+          "name": "Error Trigger:",
+          "value": "{trigger}",
+          "inline": false
+        },
+        {
+          "id": 288637019,
+          "name": "Error Reason:",
+          "value": "{reason}"
+        }
+      ]
+    }
+  ],
+  "components": [],
+  "actions": {},
+  "flags": 0
+}</value>
+  </data>
+  <data name="chatEmbed.Text" xml:space="preserve">
+    <value>{
+  "content": "",
+  "tts": false,
+  "embeds": [
+    {
+      "id": 244061115,
+      "description": "&lt;@{mention}&gt; - Detected P2P AI Chat Event\n\nLog: **{filename}**\nAccount: **{folder}**\n\n",
+      "fields": [
+        {
+          "id": 495459941,
+          "name": "Chat:",
+          "value": "{chat}",
+          "inline": false
+        },
+        {
+          "id": 617834865,
+          "name": "",
+          "value": ""
+        },
+        {
+          "id": 177252030,
+          "name": "Response:",
+          "value": "{response}"
+        }
+      ],
+      "title": "P2P AI Chat Event",
+      "footer": {
+        "text": "P2P Monitor Detection system - {time}"
+      },
+      "image": {
+        "url": "{screenshot}"
+      },
+      "color": 6029136
+    }
+  ],
+  "components": [],
+  "actions": {},
+  "flags": 0
+}</value>
+  </data>
+  <data name="questEmbed.Text" xml:space="preserve">
+    <value>{
+  "content": "",
+  "tts": false,
+  "embeds": [
+    {
+      "title": "P2P AI Quest Completion",
+      "description": "&lt;@{mention}&gt; - Detected P2P AI Quest Completion\n\nLog: **{filename}**\nAccount: **{folder}**\n\n",
+      "fields": [
+        {
+          "name": "Quest Completed:",
+          "value": "{segment}",
+          "inline": false
+        }
+      ],
+      "footer": {
+        "text": "P2P Monitor Detection System - {time}"
+      },
+      "color": 6029136
+    }
+  ]
+}</value>
+  </data>
+  <data name="MaterialMultiLineTextBox1.Text" xml:space="preserve">
+    <value>Embed API
+
+{mention}
+Replaced with the Discord user ID or mention string entered.
+
+{filename}
+Replaced with the log file’s name only (not the full path).
+Example: logfile-001.log
+
+{folder}
+Replaced with the last folder name where the log file resides.
+Useful when monitoring multiple DreamBot accounts (e.g., “Main”, “Ironman”).
+
+{trigger}
+Replaced with the error/failure trigger that was matched from the failure triggers/reasons list.
+
+{reason}
+Replaced with the error/failure reason that was matched from the failure triggers/reasons list.
+
+{type}
+Replaced with the category of event or failure.
+Possible values: "Chat", "Quest", "Skill", "Combat" (or "Slayer/Combat")
+
+{time}
+Replaced with the timestamp when the log event occurred.
+Format: yyyy-MM-dd HH:mm:ss (local computer time).
+
+{index}
+Replaced with the sequence number of the segment when multiple segments are detected in the same log.
+Example: Segment 1, Segment 2, etc.
+
+{segment}
+Replaced with the raw captured log lines for chat or quest events.
+For chat events, this is now less important because you have {chat} and {response} for finer control.
+
+{chat}
+Replaced with only the message text after CHAT: in the log line.
+
+{response}
+Replaced with only the message text after SLOWLY TYPING RESPONSE: or the full BAD RESPONSE (...).
+
+{screenshot}
+Replaced with an attachment reference to the captured screenshot of the DreamBot client window during chat events.</value>
+  </data>
   <metadata name="ImageList1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>
@@ -125,14 +311,14 @@
         AAEAAAD/////AQAAAAAAAAAMAgAAAEZTeXN0ZW0uV2luZG93cy5Gb3JtcywgQ3VsdHVyZT1uZXV0cmFs
         LCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5BQEAAAAmU3lzdGVtLldpbmRvd3MuRm9ybXMu
         SW1hZ2VMaXN0U3RyZWFtZXIBAAAABERhdGEHAgIAAAAJAwAAAA8DAAAAgk8AAAJNU0Z0AUkBTAIBAQUB
-        AAG4AQYBuAEGASQBAAEkAQAE/wEhAQAI/wFCAU0BNgcAATYDAAEoAwABkAMAAUgDAAEBAQABIAYAAaJK
-        AAMfASwDXQHRAxgB/gMAAf8DAAH/AxgB/gNdAdEDHwEs/wD/ACIAA1sBxQMAAf8DAAH/AwAB/wMAAf8D
+        AAHAAQYBwAEGASQBAAEkAQAE/wEhAQAI/wFCAU0BNgcAATYDAAEoAwABkAMAAUgDAAEBAQABIAYAAaJK
+        AAMfASwDXQHRAxkB/gMAAf8DAAH/AxkB/gNdAdEDHwEs/wD/ACIAA1sBxQMAAf8DAAH/AwAB/wMAAf8D
         AAH/AwAB/wNbAcX/AP8AHgAEAgNIAfYDAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DUQH3BAL/AP0AAw8B
         EwNEAXoDRgF/AxQBGwwAAxMBGgMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AxMBGgwAAxQB
         GwNGAYADRAF7Aw8BFP8A3QADEwEaA1sB2AMAAf8DAAH/A2EB6wMtAUUIAAMvAUkDAAH/AwAB/wMAAf8D
         AAH/AwAB/wMAAf8DAAH/AwAB/wMvAUkIAAMtAUUDXQHqAwAB/wMAAf8DWwHYAxMBGv8A1QADEwEaA1sB
-        2AMAAf8DAAH/AwAB/wMAAf8DKwH8A0sBjQNZAbsDGAH+AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB
-        /wMAAf8DGAH+A1kBuwNLAY0DKwH8AwAB/wMAAf8DAAH/AwAB/wNbAdgDEwEa/wDNAAMPARQDWwHYAwAB
+        2AMAAf8DAAH/AwAB/wMAAf8DKwH8A0sBjQNZAbsDGQH+AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB
+        /wMAAf8DGQH+A1kBuwNLAY0DKwH8AwAB/wMAAf8DAAH/AwAB/wNbAdgDEwEa/wDNAAMPARQDWwHYAwAB
         /wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB
         /wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DWwHYAw8BE/8AyQADRAF7AwAB
         /wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB
@@ -146,22 +332,22 @@
         AANLAY0DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/A1oB6QM6AWEDBQEGEAADBAEFAzoBYANaAekD
         AAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/A0sBjf8A2QADWQG7AwAB/wMAAf8DAAH/AwAB/wMAAf8D
         AAH/A14B0gMTARogAAMTARoDXgHSAwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/A1kBu/8AzQAEAgMTARoD
-        MAFKAxgB/gMAAf8DAAH/AwAB/wMAAf8DAAH/A1oB6QMTARooAAMTARoDWgHpAwAB/wMAAf8DAAH/AwAB
-        /wMAAf8DGAH+Ay8BSQMUARsEAv8AuQADHwEsA1sBxQNIAfYDAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8D
+        MAFKAxkB/gMAAf8DAAH/AwAB/wMAAf8DAAH/A1oB6QMTARooAAMTARoDWgHpAwAB/wMAAf8DAAH/AwAB
+        /wMAAf8DGQH+Ay8BSQMUARsEAv8AuQADHwEsA1sBxQNIAfYDAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8D
         AAH/AwAB/wM6AWAwAAM6AWEDAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wNRAfcDWwHFAx8B
         LP8AsQADXQHRAwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/A1oB6QMEAQUwAAMEAQUD
-        XQHqAwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/A1sB0P8AsQADGAH+AwAB/wMAAf8D
+        XQHqAwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/A1sB0P8AsQADGQH+AwAB/wMAAf8D
         AAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/A1IBqDgAA1IBqAMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB
-        /wMAAf8DAAH/AwAB/wMYAf7/ALQAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8D
+        /wMAAf8DAAH/AwAB/wMZAf7/ALQAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8D
         SQGFOAADSQGGAwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB//8AtAAB/wMAAf8D
         AAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wNJAYU4AANJAYYDAAH/AwAB/wMAAf8DAAH/AwAB
-        /wMAAf8DAAH/AwAB/wMAAf8DAAH//wCxAAMYAf4DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB
-        /wMAAf8DUgGoOAADUgGoAwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AxgB/v8AsQAD
+        /wMAAf8DAAH/AwAB/wMAAf8DAAH//wCxAAMZAf4DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB
+        /wMAAf8DUgGoOAADUgGoAwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AxkB/v8AsQAD
         XQHRAwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/A1oB6QMEAQUwAAMEAQUDXQHqAwAB
         /wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/A10B0f8AsQADHwEsA1sBxQNIAfYDAAH/AwAB
         /wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wM6AWAwAAM6AWADAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8D
-        AAH/AwAB/wNRAfcDWQHGAyABLf8AuQAEAgMTARoDLwFJAxgB/gMAAf8DAAH/AwAB/wMAAf8DAAH/A1oB
-        6QMTARooAAMTARoDWgHpAwAB/wMAAf8DAAH/AwAB/wMAAf8DGAH+Ay8BSQMUARsEAv8AzQADWQG7AwAB
+        AAH/AwAB/wNRAfcDWQHGAyABLf8AuQAEAgMTARoDLwFJAxkB/gMAAf8DAAH/AwAB/wMAAf8DAAH/A1oB
+        6QMTARooAAMTARoDWgHpAwAB/wMAAf8DAAH/AwAB/wMAAf8DGQH+Ay8BSQMUARsEAv8AzQADWQG7AwAB
         /wMAAf8DAAH/AwAB/wMAAf8DAAH/A14B0gMTARogAAMTARoDXgHSAwAB/wMAAf8DAAH/AwAB/wMAAf8D
         AAH/A1kBu/8A2QADSwGNAwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wNaAekDOgFgAwQBBRAAAwQB
         BQM6AWADWgHpAwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wNLAY3/ANUAAy0BRQMrAfwDAAH/AwAB
@@ -175,13 +361,13 @@
         /wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/A0QBe/8AyQADDwEUA1sB
         2AMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB
         /wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/A1sB2AMPART/AM0AAxMB
-        GgNbAdgDAAH/AwAB/wMAAf8DAAH/AysB/ANLAY0DWQG7AxgB/gMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB
-        /wMAAf8DAAH/AxgB/gNXAbwDSwGNAysB/AMAAf8DAAH/AwAB/wMAAf8DWwHYAxMBGv8A1QADEwEaA1sB
+        GgNbAdgDAAH/AwAB/wMAAf8DAAH/AysB/ANLAY0DWQG7AxkB/gMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB
+        /wMAAf8DAAH/AxkB/gNXAbwDSwGNAysB/AMAAf8DAAH/AwAB/wMAAf8DWwHYAxMBGv8A1QADEwEaA1sB
         2AMAAf8DAAH/A2EB6wMtAUYIAAMvAUkDAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DAAH/AwAB/wMwAUoI
         AAMtAUUDXQHqAwAB/wMAAf8DWwHYAxMBGv8A3QADDwEUA0QBewNGAYADFAEbDAADEwEaAwAB/wMAAf8D
         AAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8DEwEaDAADFAEbA0YBgANEAXsDDwET/wD9AAQCA1EB9wMAAf8D
         AAH/AwAB/wMAAf8DAAH/AwAB/wNRAfcEAv8A/wAeAANbAcUDAAH/AwAB/wMAAf8DAAH/AwAB/wMAAf8D
-        WwHF/wD/ACIAAyABLQNdAdEDGAH+AwAB/wMAAf8DGAH+A10B0QMfASz/AP8AGgADGgEkAz8BbQNTAacD
+        WwHF/wD/ACIAAyABLQNdAdEDGQH+AwAB/wMAAf8DGQH+A10B0QMfASz/AP8AGgADGgEkAz8BbQNTAacD
         XgHSA2IB7gMrAfwDKwH8A2IB7gNeAdIDUwGnAz8BbQMaASTEAAMZASIDLgFHAy4BRwMuAUcDLgFHAy4B
         RwMuAUcDLQFEAwkBDEAAAwkBDAMtAUQDLgFHAy4BRwMuAUcDLgFHAy4BRwMuAUcDGQEiuAADAwEEAzgE
         XAHIA4AB/gEEAQEBAwH/AQQBAQEDAf8BBAEBAQMB/wEEAQEBAwH/AQQBAQEDAf8BBAEBAQMB/wEEAQEB
@@ -466,192 +652,6 @@
         /wEAAT8B/wHAAQ8E/wIAAf8BgAEAAR8F/wEAAT8B/wHAAQ8E/wIAAf8B8AEABv8BgAE/Af8BwAEfBP8C
         AAs=
 </value>
-  </data>
-  <data name="taskEmbed.Text" xml:space="preserve">
-    <value>{
-  "content": "",
-  "tts": false,
-  "embeds": [
-    {
-      "id": 244061115,
-      "description": "&lt;@{mention}&gt; - Detected P2P AI Chat Event\n\nLog: **{filename}**\nAccount: **{folder}**\n\n",
-      "fields": [
-        {
-          "id": 495459941,
-          "name": "Chat:",
-          "value": "{chat}",
-          "inline": false
-        },
-        {
-          "id": 617834865,
-          "name": "",
-          "value": ""
-        },
-        {
-          "id": 177252030,
-          "name": "Response:",
-          "value": "{response}"
-        }
-      ],
-      "title": "P2P AI Chat Event",
-      "footer": {
-        "text": "P2P Monitor Detection system - {time}"
-      },
-      "image": {
-        "url": "{screenshot}"
-      },
-      "color": 6029136
-    }
-  ],
-  "components": [],
-  "actions": {},
-  "flags": 0
-}</value>
-  </data>
-  <data name="errorEmbed.Text" xml:space="preserve">
-    <value>{
-  "content": "",
-  "tts": false,
-  "embeds": [
-    {
-      "id": 244061115,
-      "title": "P2P AI Error Detected",
-      "description": "&lt;@{mention}&gt; - Detected P2P AI {type} Error\n\nLog: **{filename}**\nAccount: **{folder}**\n\n",
-      "color": 16711680,
-      "footer": {
-        "text": "P2P Monitor Detection System - {time}"
-      },
-      "image": {
-        "url": "{screenshot}"
-      },
-      "fields": [
-        {
-          "id": 495459941,
-          "name": "Error Trigger:",
-          "value": "{trigger}",
-          "inline": false
-        },
-        {
-          "id": 288637019,
-          "name": "Error Reason:",
-          "value": "{reason}"
-        }
-      ]
-    }
-  ],
-  "components": [],
-  "actions": {},
-  "flags": 0
-}</value>
-  </data>
-  <data name="chatEmbed.Text" xml:space="preserve">
-    <value>{
-  "content": "",
-  "tts": false,
-  "embeds": [
-    {
-      "id": 244061115,
-      "description": "&lt;@{mention}&gt; - Detected P2P AI Chat Event\n\nLog: **{filename}**\nAccount: **{folder}**\n\n",
-      "fields": [
-        {
-          "id": 495459941,
-          "name": "Chat:",
-          "value": "{chat}",
-          "inline": false
-        },
-        {
-          "id": 617834865,
-          "name": "",
-          "value": ""
-        },
-        {
-          "id": 177252030,
-          "name": "Response:",
-          "value": "{response}"
-        }
-      ],
-      "title": "P2P AI Chat Event",
-      "footer": {
-        "text": "P2P Monitor Detection system - {time}"
-      },
-      "image": {
-        "url": "{screenshot}"
-      },
-      "color": 6029136
-    }
-  ],
-  "components": [],
-  "actions": {},
-  "flags": 0
-}</value>
-  </data>
-  <data name="questEmbed.Text" xml:space="preserve">
-    <value>{
-  "content": "",
-  "tts": false,
-  "embeds": [
-    {
-      "title": "P2P AI Quest Completion",
-      "description": "&lt;@{mention}&gt; - Detected P2P AI Quest Completion\n\nLog: **{filename}**\nAccount: **{folder}**\n\n",
-      "fields": [
-        {
-          "name": "Quest Completed:",
-          "value": "{segment}",
-          "inline": false
-        }
-      ],
-      "footer": {
-        "text": "P2P Monitor Detection System - {time}"
-      },
-      "color": 6029136
-    }
-  ]
-}</value>
-  </data>
-  <data name="MaterialMultiLineTextBox1.Text" xml:space="preserve">
-    <value>Embed API
-
-{mention}
-Replaced with the Discord user ID or mention string entered.
-
-{filename}
-Replaced with the log file’s name only (not the full path).
-Example: logfile-001.log
-
-{folder}
-Replaced with the last folder name where the log file resides.
-Useful when monitoring multiple DreamBot accounts (e.g., “Main”, “Ironman”).
-
-{trigger}
-Replaced with the error/failure trigger that was matched from the failure triggers/reasons list.
-
-{reason}
-Replaced with the error/failure reason that was matched from the failure triggers/reasons list.
-
-{type}
-Replaced with the category of event or failure.
-Possible values: "Chat", "Quest", "Skill", "Combat" (or "Slayer/Combat")
-
-{time}
-Replaced with the timestamp when the log event occurred.
-Format: yyyy-MM-dd HH:mm:ss (local computer time).
-
-{index}
-Replaced with the sequence number of the segment when multiple segments are detected in the same log.
-Example: Segment 1, Segment 2, etc.
-
-{segment}
-Replaced with the raw captured log lines for chat or quest events.
-For chat events, this is now less important because you have {chat} and {response} for finer control.
-
-{chat}
-Replaced with only the message text after CHAT: in the log line.
-
-{response}
-Replaced with only the message text after SLOWLY TYPING RESPONSE: or the full BAD RESPONSE (...).
-
-{screenshot}
-Replaced with an attachment reference to the captured screenshot of the DreamBot client window during chat events.</value>
   </data>
   <metadata name="$this.TrayHeight" type="System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>39</value>
